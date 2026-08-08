@@ -3868,7 +3868,7 @@ export default function CadetsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   שם מלא *
                 </span>
                 <input
@@ -3882,13 +3882,13 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                   placeholder="שם הצוער"
                 />
               </label>
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   מין
                 </span>
                 <select
@@ -3902,7 +3902,7 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3 bg-white"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900"
                 >
                   <option value="">
                     לא הוגדר
@@ -3917,7 +3917,7 @@ export default function CadetsPage() {
               </label>
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   חטיבה
                 </span>
                 <input
@@ -3931,12 +3931,12 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                 />
               </label>
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   יחידה
                 </span>
                 <input
@@ -3950,12 +3950,12 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                 />
               </label>
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   פלוגה
                 </span>
                 <input
@@ -3969,12 +3969,12 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                 />
               </label>
 
               <label>
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   צוות
                 </span>
                 <input
@@ -3988,12 +3988,12 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                 />
               </label>
 
               <label className="sm:col-span-2">
-                <span className="block text-sm font-medium mb-1.5">
+                <span className="block text-sm font-bold text-slate-900 mb-1.5">
                   מקור הצוער
                 </span>
                 <select
@@ -4007,7 +4007,7 @@ export default function CadetsPage() {
                       })
                     )
                   }
-                  className="w-full border rounded-xl px-4 py-3 bg-white"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900"
                 >
                   <option value="צוער חדש">
                     צוער חדש
@@ -4163,7 +4163,7 @@ export default function CadetsPage() {
 
               <div className="mt-5 border-t pt-5 space-y-4">
                 <label>
-                  <span className="block text-sm font-medium mb-1.5">
+                  <span className="block text-sm font-bold text-slate-900 mb-1.5">
                     סיבת הדחה / יציאה
                   </span>
                   <input
@@ -4177,13 +4177,13 @@ export default function CadetsPage() {
                         event.target.value
                       )
                     }
-                    className="w-full border rounded-xl px-4 py-3"
+                    className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                     placeholder="למשל: רפואי, מקצועי, אישי..."
                   />
                 </label>
 
                 <label>
-                  <span className="block text-sm font-medium mb-1.5">
+                  <span className="block text-sm font-bold text-slate-900 mb-1.5">
                     הערה לחזרה עתידית
                   </span>
                   <input
@@ -4197,7 +4197,7 @@ export default function CadetsPage() {
                         event.target.value
                       )
                     }
-                    className="w-full border rounded-xl px-4 py-3"
+                    className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 placeholder:text-slate-400"
                     placeholder="מחזור יעד / הערה רלוונטית"
                   />
                 </label>
