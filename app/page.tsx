@@ -105,6 +105,24 @@ type BattalionSummary = {
     | null;
 };
 
+
+type AiAnalysis = {
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  trends: string[];
+  recommendations: string[];
+  commanderMessage: string;
+};
+
+type AiMetricPayload = Record<
+  string,
+  {
+    average?: string;
+    failedPercent: number;
+  }
+>;
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -208,6 +226,27 @@ export default function Home() {
     setDataMessage,
   ] =
     useState("");
+
+
+  const [
+    aiLoading,
+    setAiLoading,
+  ] =
+    useState(false);
+
+  const [
+    aiError,
+    setAiError,
+  ] =
+    useState("");
+
+  const [
+    aiAnalysis,
+    setAiAnalysis,
+  ] =
+    useState<AiAnalysis | null>(
+      null
+    );
 
   /* =======================================================
      LOGOUT
@@ -641,6 +680,161 @@ export default function Home() {
       battalionSummaries,
     ]);
 
+
+  /* =======================================================
+     AI PAYLOAD
+  ======================================================= */
+
+  const aiMetrics =
+    useMemo<
+      AiMetricPayload
+    >(() => {
+      const grouped =
+        new Map<
+          string,
+          number[]
+        >();
+
+      for (
+        const row of
+        latestRows
+      ) {
+        for (
+          const [
+            key,
+            metric,
+          ] of
+          Object.entries(
+            row.metrics
+          )
+        ) {
+          const values =
+            grouped.get(
+              key
+            ) ?? [];
+
+          values.push(
+            Number(
+              metric.failedPercent ??
+                0
+            )
+          );
+
+          grouped.set(
+            key,
+            values
+          );
+        }
+      }
+
+      const result:
+        AiMetricPayload = {};
+
+      for (
+        const [
+          key,
+          values,
+        ] of
+        grouped.entries()
+      ) {
+        result[
+          getMetricLabel(
+            key
+          )
+        ] = {
+          failedPercent:
+            average(
+              values
+            ) ?? 0,
+        };
+      }
+
+      return result;
+    }, [
+      latestRows,
+    ]);
+
+  async function runAiAnalysis() {
+    setAiLoading(
+      true
+    );
+
+    setAiError(
+      ""
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/analysis",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                track:
+                  "כלל CommandFit",
+
+                overall: {
+                  passedPercent:
+                    globalSummary.passed ??
+                    0,
+
+                  failedPercent:
+                    globalSummary.failed ??
+                    0,
+
+                  excellentPercent:
+                    globalSummary.excellent ??
+                    0,
+                },
+
+                metrics:
+                  aiMetrics,
+              }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.ok
+      ) {
+        throw new Error(
+          data?.message ??
+            "ניתוח AI נכשל"
+        );
+      }
+
+      setAiAnalysis(
+        data.analysis as
+          AiAnalysis
+      );
+    } catch (error) {
+      console.error(
+        "AI dashboard error:",
+        error
+      );
+
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "אירעה שגיאה בניתוח AI"
+      );
+    } finally {
+      setAiLoading(
+        false
+      );
+    }
+  }
+
   /* =======================================================
      TOP WEAKNESSES
   ======================================================= */
@@ -836,6 +1030,131 @@ export default function Home() {
 
         </section>
 
+        {/* AI ANALYSIS */}
+
+        <section className="bg-gradient-to-l from-indigo-950 to-slate-900 text-white rounded-3xl shadow-sm p-5 sm:p-7 mb-8">
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+
+            <div>
+
+              <p className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+                CommandFit AI
+              </p>
+
+              <h2 className="text-2xl font-black mt-1">
+                ✨ ניתוח AI למפקד
+              </h2>
+
+              <p className="text-slate-300 mt-2 max-w-3xl">
+                ניתוח אוטומטי של אחוזי העוברים, הנכשלים, המצטיינים ומוקדי אי־העמידה — על בסיס נתונים מצרפיים בלבד.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={
+                runAiAnalysis
+              }
+              disabled={
+                aiLoading ||
+                dataLoading ||
+                latestRows.length ===
+                  0
+              }
+              className="w-full lg:w-auto bg-white text-slate-950 hover:bg-indigo-50 rounded-xl px-6 py-3 font-black disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {aiLoading
+                ? "מנתח נתונים..."
+                : aiAnalysis
+                ? "🔄 ניתוח מחדש"
+                : "✨ נתח באמצעות AI"}
+            </button>
+
+          </div>
+
+          {aiError && (
+            <div className="bg-red-500/10 border border-red-400/20 text-red-100 rounded-xl p-4 mt-5">
+              {aiError}
+            </div>
+          )}
+
+          {!aiAnalysis &&
+            !aiError && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mt-5 text-slate-300 text-sm">
+              לחץ על „נתח באמצעות AI” לקבלת תמונת מצב, חוזקות, מוקדי חולשה והמלצות לפעולה.
+            </div>
+          )}
+
+          {aiAnalysis && (
+            <div className="mt-6 space-y-4">
+
+              <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
+
+                <p className="text-xs text-indigo-200 font-bold">
+                  תמונת מצב
+                </p>
+
+                <p className="text-lg font-bold mt-2 leading-8">
+                  {aiAnalysis.summary}
+                </p>
+
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <AiListCard
+                  title="חוזקות"
+                  items={
+                    aiAnalysis.strengths
+                  }
+                  icon="✅"
+                />
+
+                <AiListCard
+                  title="מוקדי חולשה"
+                  items={
+                    aiAnalysis.weaknesses
+                  }
+                  icon="⚠️"
+                />
+
+                <AiListCard
+                  title="מגמות"
+                  items={
+                    aiAnalysis.trends
+                  }
+                  icon="📈"
+                />
+
+                <AiListCard
+                  title="המלצות לפעולה"
+                  items={
+                    aiAnalysis.recommendations
+                  }
+                  icon="🎯"
+                />
+
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-300/20 rounded-2xl p-5">
+
+                <p className="text-xs text-indigo-200 font-bold">
+                  מסר למפקד
+                </p>
+
+                <p className="mt-2 font-bold leading-7">
+                  {aiAnalysis.commanderMessage}
+                </p>
+
+              </div>
+
+            </div>
+          )}
+
+        </section>
+
         {/* INTERVENTION POINTS */}
 
         {interventionPoints.length >
@@ -943,6 +1262,54 @@ export default function Home() {
       </div>
 
     </main>
+  );
+}
+
+/* =========================================================
+   AI LIST CARD
+========================================================= */
+
+function AiListCard({
+  title,
+  items,
+  icon,
+}: {
+  title: string;
+  items: string[];
+  icon: string;
+}) {
+  return (
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
+
+      <p className="font-black">
+        {icon} {title}
+      </p>
+
+      {items.length > 0 ? (
+        <ul className="space-y-2 mt-3 text-sm text-slate-200">
+
+          {items.map(
+            (
+              item,
+              index
+            ) => (
+              <li
+                key={`${title}-${index}`}
+                className="leading-6"
+              >
+                • {item}
+              </li>
+            )
+          )}
+
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-400 mt-3">
+          אין מספיק נתונים.
+        </p>
+      )}
+
+    </div>
   );
 }
 
