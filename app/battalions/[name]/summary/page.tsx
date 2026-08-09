@@ -650,7 +650,7 @@ export default function PercentageSummaryPage() {
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 
           <TopCard
-            title="ממוצע מעבר"
+            title="ממוצע עוברים"
             value={
               formatPercent(
                 averagePassed
@@ -660,7 +660,7 @@ export default function PercentageSummaryPage() {
           />
 
           <TopCard
-            title="ממוצע כישלון"
+            title="ממוצע נכשלים"
             value={
               formatPercent(
                 averageFailed
