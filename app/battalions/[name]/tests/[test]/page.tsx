@@ -24,12 +24,22 @@ import {
    TYPES
 ========================================================= */
 
+type MetricValue = {
+  average?: string;
+  failedPercent: number;
+};
+
+type MetricsMap =
+  Record<string, MetricValue>;
+
 type PercentageResult = {
   attempt: number;
 
   passedPercent: number;
   failedPercent: number;
   excellentPercent: number;
+
+  metrics: MetricsMap;
 };
 
 type CloudPercentageRow = {
@@ -38,43 +48,174 @@ type CloudPercentageRow = {
   passed_percent: number | null;
   failed_percent: number | null;
   excellent_percent: number | null;
+
+  metrics:
+    | MetricsMap
+    | null;
 };
+
+type MetricDefinition = {
+  key: string;
+  title: string;
+
+  averageLabel?: string;
+  averagePlaceholder?: string;
+
+  failedLabel: string;
+
+  failureOnly?: boolean;
+};
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const STAFF_BATTALIONS =
+  new Set([
+    "ארז",
+    "ברוש",
+    "חרוב",
+    "אלון",
+  ]);
+
+const LORAN_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+      averageLabel:
+        "ממוצע ריצה",
+      averagePlaceholder:
+        "לדוגמה 21:45",
+      failedLabel:
+        "% נכשלי ריצה",
+    },
+    {
+      key: "facilities",
+      title: "מתקנים",
+      failedLabel:
+        "% לא עוברים מתקנים",
+      failureOnly:
+        true,
+    },
+    {
+      key: "ylm",
+      title: 'יל"מ',
+      averageLabel:
+        'ממוצע יל"מ',
+      averagePlaceholder:
+        "הזן ממוצע",
+      failedLabel:
+        ' % נכשלי יל"מ',
+    },
+  ];
+
+const COMBAT_FITNESS_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+      averageLabel:
+        "ממוצע ריצה",
+      averagePlaceholder:
+        "לדוגמה 12:35",
+      failedLabel:
+        "% נכשלי ריצה",
+    },
+    {
+      key: "sprints",
+      title: "ספרינטים",
+      averageLabel:
+        "ממוצע ספרינטים",
+      averagePlaceholder:
+        "לדוגמה 48.5",
+      failedLabel:
+        "% נכשלי ספרינטים",
+    },
+    {
+      key: "pullups",
+      title: "מתח",
+      averageLabel:
+        "ממוצע מתח",
+      averagePlaceholder:
+        "לדוגמה 11.2",
+      failedLabel:
+        "% נכשלי מתח",
+    },
+    {
+      key: "push",
+      title:
+        "לחיצת חזה / מקבילים",
+      averageLabel:
+        "ממוצע",
+      averagePlaceholder:
+        "לדוגמה 13.4",
+      failedLabel:
+        "% נכשלי לחיצת חזה / מקבילים",
+    },
+    {
+      key: "floorLift",
+      title:
+        "הרמה מהרצפה",
+      averageLabel:
+        "ממוצע הרמה מהרצפה",
+      averagePlaceholder:
+        "לדוגמה 9.8",
+      failedLabel:
+        "% נכשלי הרמה מהרצפה",
+    },
+  ];
+
+const STAFF_FITNESS_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+      averageLabel:
+        "ממוצע ריצה",
+      averagePlaceholder:
+        "לדוגמה 15:10",
+      failedLabel:
+        "% נכשלי ריצה",
+    },
+    {
+      key: "pushups",
+      title:
+        "שכיבות סמיכה",
+      averageLabel:
+        "ממוצע שכיבות סמיכה",
+      averagePlaceholder:
+        "לדוגמה 32.5",
+      failedLabel:
+        "% נכשלי שכיבות סמיכה",
+    },
+  ];
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function getHebrewAttemptLetter(
-  attempt: number
-) {
-  const letters: Record<
-    number,
-    string
-  > = {
-    1: "א׳",
-    2: "ב׳",
-    3: "ג׳",
-    4: "ד׳",
-    5: "ה׳",
-    6: "ו׳",
-    7: "ז׳",
-    8: "ח׳",
-    9: "ט׳",
-    10: "י׳",
-  };
-
-  return (
-    letters[attempt] ||
-    attempt.toString()
-  );
-}
-
 function getAttemptLabel(
   attempt: number
 ) {
-  return `מועד ${getHebrewAttemptLetter(
+  const letters:
+    Record<number, string> = {
+      1: "א׳",
+      2: "ב׳",
+      3: "ג׳",
+      4: "ד׳",
+      5: "ה׳",
+      6: "ו׳",
+      7: "ז׳",
+      8: "ח׳",
+      9: "ט׳",
+      10: "י׳",
+    };
+
+  return `מועד ${
+    letters[attempt] ??
     attempt
-  )}`;
+  }`;
 }
 
 function clampPercent(
@@ -103,16 +244,119 @@ function clampPercent(
 function formatPercent(
   value: number
 ) {
-  const rounded =
+  return `${
     Math.round(
       value * 10
-    ) / 10;
+    ) / 10
+  }%`;
+}
 
-  return `${rounded}%`;
+function getMetricDefinitions(
+  battalionName: string,
+  testName: string
+): MetricDefinition[] {
+  const isLoran =
+    testName.includes(
+      "לורן"
+    );
+
+  if (isLoran) {
+    return LORAN_METRICS;
+  }
+
+  const isFitness =
+    testName.includes(
+      'כש"ג'
+    ) ||
+    testName.includes(
+      "כש״ג"
+    );
+
+  if (isFitness) {
+    return STAFF_BATTALIONS.has(
+      battalionName
+    )
+      ? STAFF_FITNESS_METRICS
+      : COMBAT_FITNESS_METRICS;
+  }
+
+  return [];
+}
+
+function createEmptyMetrics(
+  definitions:
+    MetricDefinition[]
+): MetricsMap {
+  return Object.fromEntries(
+    definitions.map(
+      (metric) => [
+        metric.key,
+        {
+          average:
+            metric.failureOnly
+              ? undefined
+              : "",
+          failedPercent:
+            0,
+        },
+      ]
+    )
+  );
+}
+
+function normalizeMetrics(
+  source:
+    | MetricsMap
+    | null,
+  definitions:
+    MetricDefinition[]
+): MetricsMap {
+  const empty =
+    createEmptyMetrics(
+      definitions
+    );
+
+  for (
+    const definition of
+    definitions
+  ) {
+    const current =
+      source?.[
+        definition.key
+      ];
+
+    if (!current) {
+      continue;
+    }
+
+    empty[
+      definition.key
+    ] = {
+      average:
+        definition.failureOnly
+          ? undefined
+          : String(
+              current.average ??
+              ""
+            ),
+
+      failedPercent:
+        clampPercent(
+          String(
+            current.failedPercent ??
+            0
+          )
+        ),
+    };
+  }
+
+  return empty;
 }
 
 function createEmptyResult(
-  attempt: number
+  attempt: number,
+  definitions:
+    MetricDefinition[]
 ): PercentageResult {
   return {
     attempt,
@@ -120,6 +364,11 @@ function createEmptyResult(
     passedPercent: 0,
     failedPercent: 100,
     excellentPercent: 0,
+
+    metrics:
+      createEmptyMetrics(
+        definitions
+      ),
   };
 }
 
@@ -152,6 +401,19 @@ export default function TestPage() {
       params.test
     );
 
+  const metricDefinitions =
+    useMemo(
+      () =>
+        getMetricDefinitions(
+          battalionName,
+          testName
+        ),
+      [
+        battalionName,
+        testName,
+      ]
+    );
+
   const [
     activeCycle,
     setActiveCycle,
@@ -179,7 +441,11 @@ export default function TestPage() {
     setResult,
   ] =
     useState<PercentageResult>(
-      createEmptyResult(1)
+      () =>
+        createEmptyResult(
+          1,
+          metricDefinitions
+        )
     );
 
   const [
@@ -253,7 +519,8 @@ export default function TestPage() {
               attempt,
               passed_percent,
               failed_percent,
-              excellent_percent
+              excellent_percent,
+              metrics
             `
           )
           .eq(
@@ -288,6 +555,12 @@ export default function TestPage() {
           error
         );
 
+        const empty =
+          createEmptyResult(
+            1,
+            metricDefinitions
+          );
+
         setAttempts(
           []
         );
@@ -297,9 +570,7 @@ export default function TestPage() {
         );
 
         setResult(
-          createEmptyResult(
-            1
-          )
+          empty
         );
 
         setMessage(
@@ -342,6 +613,12 @@ export default function TestPage() {
                 row.excellent_percent ??
                 0
               ),
+
+            metrics:
+              normalizeMetrics(
+                row.metrics,
+                metricDefinitions
+              ),
           })
         );
 
@@ -356,7 +633,8 @@ export default function TestPage() {
                 1
             ]
           : createEmptyResult(
-              1
+              1,
+              metricDefinitions
             );
 
       setSelectedAttempt(
@@ -381,6 +659,7 @@ export default function TestPage() {
   }, [
     battalionName,
     cycleId,
+    metricDefinitions,
     testName,
   ]);
 
@@ -390,42 +669,6 @@ export default function TestPage() {
 
   const validation =
     useMemo(() => {
-      if (
-        result.passedPercent <
-          0 ||
-        result.passedPercent >
-          100 ||
-        result.failedPercent <
-          0 ||
-        result.failedPercent >
-          100 ||
-        result.excellentPercent <
-          0 ||
-        result.excellentPercent >
-          100
-      ) {
-        return {
-          valid: false,
-          text:
-            "כל אחוז חייב להיות בין 0% ל־100%.",
-        };
-      }
-
-      if (
-        Math.abs(
-          result.passedPercent +
-            result.failedPercent -
-            100
-        ) >
-        0.11
-      ) {
-        return {
-          valid: false,
-          text:
-            "אחוז העוברים ואחוז הנכשלים חייבים להסתכם ל־100%.",
-        };
-      }
-
       if (
         result.excellentPercent >
         result.passedPercent
@@ -437,88 +680,40 @@ export default function TestPage() {
         };
       }
 
+      for (
+        const metric of
+        metricDefinitions
+      ) {
+        const failed =
+          result.metrics[
+            metric.key
+          ]?.failedPercent ??
+          0;
+
+        if (
+          failed < 0 ||
+          failed > 100
+        ) {
+          return {
+            valid: false,
+            text:
+              `אחוז הנכשלים ב${metric.title} חייב להיות בין 0% ל־100%.`,
+          };
+        }
+      }
+
       return {
         valid: true,
         text:
           "הנתונים תקינים ומוכנים לשמירה.",
       };
     }, [
+      metricDefinitions,
       result,
     ]);
 
   /* =======================================================
-     ATTEMPTS
-  ======================================================= */
-
-  function selectAttempt(
-    attempt: number
-  ) {
-    setSelectedAttempt(
-      attempt
-    );
-
-    const existing =
-      attempts.find(
-        (item) =>
-          item.attempt ===
-          attempt
-      );
-
-    setResult(
-      existing ??
-      createEmptyResult(
-        attempt
-      )
-    );
-
-    setMessage(
-      ""
-    );
-  }
-
-  function addAttempt() {
-    if (
-      isReadOnly
-    ) {
-      return;
-    }
-
-    const highest =
-      attempts.reduce(
-        (
-          max,
-          item
-        ) =>
-          Math.max(
-            max,
-            item.attempt
-          ),
-        0
-      );
-
-    const next =
-      Math.max(
-        highest + 1,
-        selectedAttempt + 1
-      );
-
-    setSelectedAttempt(
-      next
-    );
-
-    setResult(
-      createEmptyResult(
-        next
-      )
-    );
-
-    setMessage(
-      ""
-    );
-  }
-
-  /* =======================================================
-     UPDATE
+     UPDATE OVERALL
   ======================================================= */
 
   function updatePassed(
@@ -561,10 +756,6 @@ export default function TestPage() {
           ),
       })
     );
-
-    setMessage(
-      ""
-    );
   }
 
   function updateExcellent(
@@ -585,6 +776,141 @@ export default function TestPage() {
             value
           ),
       })
+    );
+  }
+
+  /* =======================================================
+     UPDATE METRICS
+  ======================================================= */
+
+  function updateMetricAverage(
+    key: string,
+    value: string
+  ) {
+    if (
+      isReadOnly
+    ) {
+      return;
+    }
+
+    setResult(
+      (current) => ({
+        ...current,
+
+        metrics: {
+          ...current.metrics,
+
+          [key]: {
+            ...current.metrics[
+              key
+            ],
+
+            average:
+              value,
+          },
+        },
+      })
+    );
+  }
+
+  function updateMetricFailed(
+    key: string,
+    value: string
+  ) {
+    if (
+      isReadOnly
+    ) {
+      return;
+    }
+
+    setResult(
+      (current) => ({
+        ...current,
+
+        metrics: {
+          ...current.metrics,
+
+          [key]: {
+            ...current.metrics[
+              key
+            ],
+
+            failedPercent:
+              clampPercent(
+                value
+              ),
+          },
+        },
+      })
+    );
+  }
+
+  /* =======================================================
+     ATTEMPTS
+  ======================================================= */
+
+  function selectAttempt(
+    attempt: number
+  ) {
+    setSelectedAttempt(
+      attempt
+    );
+
+    const existing =
+      attempts.find(
+        (item) =>
+          item.attempt ===
+          attempt
+      );
+
+    setResult(
+      existing ??
+      createEmptyResult(
+        attempt,
+        metricDefinitions
+      )
+    );
+
+    setMessage(
+      ""
+    );
+  }
+
+  function addAttempt() {
+    if (
+      isReadOnly
+    ) {
+      return;
+    }
+
+    const highest =
+      attempts.reduce(
+        (
+          max,
+          item
+        ) =>
+          Math.max(
+            max,
+            item.attempt
+          ),
+        0
+      );
+
+    const next =
+      Math.max(
+        highest + 1,
+        selectedAttempt + 1
+      );
+
+    setSelectedAttempt(
+      next
+    );
+
+    setResult(
+      createEmptyResult(
+        next,
+        metricDefinitions
+      )
     );
 
     setMessage(
@@ -642,6 +968,9 @@ export default function TestPage() {
             excellent_percent:
               result.excellentPercent,
 
+            metrics:
+              result.metrics,
+
             updated_at:
               new Date()
                 .toISOString(),
@@ -690,23 +1019,11 @@ export default function TestPage() {
     );
 
     setMessage(
-      "האחוזים נשמרו בענן בהצלחה"
+      "הנתונים נשמרו בענן בהצלחה"
     );
 
     setSaving(
       false
-    );
-  }
-
-  /* =======================================================
-     BACK
-  ======================================================= */
-
-  function goBackToBattalion() {
-    router.push(
-      `/battalions/${encodeURIComponent(
-        battalionName
-      )}`
     );
   }
 
@@ -721,7 +1038,7 @@ export default function TestPage() {
         className="min-h-screen bg-slate-100 flex items-center justify-center p-4"
       >
         <div className="bg-white rounded-2xl p-8 shadow-sm text-slate-700">
-          טוען נתוני אחוזים...
+          טוען נתוני בוחן...
         </div>
       </main>
     );
@@ -736,8 +1053,6 @@ export default function TestPage() {
       dir="rtl"
       className="min-h-screen bg-slate-100 text-slate-900"
     >
-
-      {/* HEADER */}
 
       <header className="bg-slate-900 text-white px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
 
@@ -763,15 +1078,19 @@ export default function TestPage() {
             </h1>
 
             <p className="text-slate-300 mt-1">
-              נתוני ביצוע מצרפיים באחוזים בלבד
+              אחוזי ביצוע וממוצעים לפי פרמטר
             </p>
 
           </div>
 
           <button
             type="button"
-            onClick={
-              goBackToBattalion
+            onClick={() =>
+              router.push(
+                `/battalions/${encodeURIComponent(
+                  battalionName
+                )}`
+              )
             }
             className="w-full md:w-auto bg-white/10 hover:bg-white/20 px-5 py-3 rounded-xl"
           >
@@ -784,31 +1103,21 @@ export default function TestPage() {
 
       <div className="max-w-[1500px] mx-auto p-4 sm:p-6 lg:p-8">
 
-        {/* SECURITY */}
-
         <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6">
 
           <p className="font-bold text-blue-900">
             🔒 נתונים מצרפיים בלבד
           </p>
 
-          <p className="text-sm text-blue-800 mt-1 leading-6">
-            אין במסך שמות, מספרי צוערים, כמות נבחנים, תוצאות אישיות או תיק אישי. נשמרים אחוזי ביצוע בלבד.
+          <p className="text-sm text-blue-800 mt-1">
+            אין שמות, כמויות או תוצאות אישיות. כל נתוני הכשל נשמרים באחוזים בלבד.
           </p>
 
         </section>
 
-        {isReadOnly && (
-          <section className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 mb-6 font-medium">
-            {isViewer
-              ? "👁️ מצב צפייה בלבד — ניתן לצפות באחוזים אך לא לערוך."
-              : "🔒 המחזור סגור — הנתונים מוצגים לקריאה בלבד."}
-          </section>
-        )}
-
         {/* ATTEMPTS */}
 
-        <section className="bg-white rounded-2xl shadow-sm p-4 sm:p-5 mb-6">
+        <section className="bg-white rounded-2xl shadow-sm p-5 mb-6">
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
@@ -818,7 +1127,7 @@ export default function TestPage() {
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                לכל מועד נשמרים אחוזים נפרדים.
+                לכל מועד נשמרת תמונת מצב נפרדת.
               </p>
             </div>
 
@@ -828,7 +1137,7 @@ export default function TestPage() {
                 onClick={
                   addAttempt
                 }
-                className="bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-5 py-3 font-bold hover:bg-blue-100"
+                className="bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-5 py-3 font-bold"
               >
                 + מועד נוסף
               </button>
@@ -855,7 +1164,7 @@ export default function TestPage() {
                     selectedAttempt ===
                     item.attempt
                       ? "rounded-xl bg-slate-900 text-white px-5 py-3 font-bold"
-                      : "rounded-xl border border-slate-200 bg-white text-slate-700 px-5 py-3 font-bold hover:bg-slate-50"
+                      : "rounded-xl border border-slate-200 bg-white text-slate-700 px-5 py-3 font-bold"
                   }
                 >
                   {getAttemptLabel(
@@ -885,54 +1194,12 @@ export default function TestPage() {
 
         </section>
 
-        {/* INPUT */}
+        {/* OVERALL */}
 
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-
-          <PercentInputCard
-            title="אחוז עברו"
-            value={
-              result.passedPercent
-            }
-            disabled={
-              isReadOnly
-            }
-            onChange={
-              updatePassed
-            }
-            helper="הזן 0–100. אחוז הנכשלים יחושב אוטומטית."
-          />
-
-          <ReadOnlyPercentCard
-            title="אחוז נכשלו"
-            value={
-              result.failedPercent
-            }
-            helper="מחושב אוטומטית כ־100% פחות אחוז העוברים."
-          />
-
-          <PercentInputCard
-            title="אחוז מצטיינים"
-            value={
-              result.excellentPercent
-            }
-            disabled={
-              isReadOnly
-            }
-            onChange={
-              updateExcellent
-            }
-            helper="המצטיינים הם חלק מהעוברים."
-          />
-
-        </section>
-
-        {/* SUMMARY */}
-
-        <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-7 mb-6">
+        <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
 
           <h2 className="text-xl sm:text-2xl font-bold">
-            תמונת מצב
+            תמונת מצב כללית
           </h2>
 
           <p className="text-slate-500 mt-1">
@@ -943,53 +1210,179 @@ export default function TestPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
 
-            <SummaryCard
-              title="עברו"
+            <PercentInput
+              title="% עברו"
               value={
                 result.passedPercent
               }
-              tone="success"
+              disabled={
+                isReadOnly
+              }
+              onChange={
+                updatePassed
+              }
             />
 
-            <SummaryCard
-              title="נכשלו"
+            <ReadOnlyPercent
+              title="% נכשלו"
               value={
                 result.failedPercent
               }
-              tone="danger"
             />
 
-            <SummaryCard
-              title="מצטיינים"
+            <PercentInput
+              title="% מצטיינים"
               value={
                 result.excellentPercent
               }
-              tone="excellent"
+              disabled={
+                isReadOnly
+              }
+              onChange={
+                updateExcellent
+              }
             />
 
           </div>
 
-          <div className="mt-6">
+        </section>
 
-            <div className="h-5 bg-slate-100 rounded-full overflow-hidden flex">
+        {/* METRICS */}
 
-              <div
-                className="bg-green-500 h-full"
-                style={{
-                  width:
-                    `${result.passedPercent}%`,
-                }}
-              />
+        <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
 
-              <div
-                className="bg-red-500 h-full"
-                style={{
-                  width:
-                    `${result.failedPercent}%`,
-                }}
-              />
+          <div>
+
+            <h2 className="text-xl sm:text-2xl font-bold">
+              חלוקה לפי פרמטר
+            </h2>
+
+            <p className="text-slate-500 mt-1">
+              ממוצע ואחוז נכשלים בכל מרכיב בהתאם לסוג הבוחן.
+            </p>
+
+          </div>
+
+          {metricDefinitions.length ===
+          0 ? (
+
+            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 mt-6">
+              טרם הוגדרה חלוקת פרמטרים לבוחן זה.
+            </div>
+
+          ) : (
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
+
+              {metricDefinitions.map(
+                (metric) => {
+
+                  const metricValue =
+                    result.metrics[
+                      metric.key
+                    ] ?? {
+                      average: "",
+                      failedPercent:
+                        0,
+                    };
+
+                  return (
+                    <MetricCard
+                      key={
+                        metric.key
+                      }
+                      definition={
+                        metric
+                      }
+                      value={
+                        metricValue
+                      }
+                      disabled={
+                        isReadOnly
+                      }
+                      onAverageChange={(
+                        value
+                      ) =>
+                        updateMetricAverage(
+                          metric.key,
+                          value
+                        )
+                      }
+                      onFailedChange={(
+                        value
+                      ) =>
+                        updateMetricFailed(
+                          metric.key,
+                          value
+                        )
+                      }
+                    />
+                  );
+                }
+              )}
 
             </div>
+
+          )}
+
+        </section>
+
+        {/* VISUAL */}
+
+        <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+
+          <h2 className="text-xl sm:text-2xl font-bold">
+            אחוזי אי־עמידה לפי מרכיב
+          </h2>
+
+          <div className="space-y-4 mt-6">
+
+            {metricDefinitions.map(
+              (metric) => {
+
+                const failed =
+                  result.metrics[
+                    metric.key
+                  ]?.failedPercent ??
+                  0;
+
+                return (
+                  <div
+                    key={
+                      metric.key
+                    }
+                  >
+
+                    <div className="flex justify-between gap-3 text-sm">
+
+                      <span className="font-bold">
+                        {metric.title}
+                      </span>
+
+                      <span className="text-red-700 font-bold">
+                        {formatPercent(
+                          failed
+                        )}
+                      </span>
+
+                    </div>
+
+                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden mt-2">
+
+                      <div
+                        className="h-full bg-red-500"
+                        style={{
+                          width:
+                            `${failed}%`,
+                        }}
+                      />
+
+                    </div>
+
+                  </div>
+                );
+              }
+            )}
 
           </div>
 
@@ -1025,11 +1418,11 @@ export default function TestPage() {
               onClick={
                 saveResult
               }
-              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 py-3 font-bold mt-5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 py-3 font-bold mt-5 disabled:opacity-40"
             >
               {saving
                 ? "שומר..."
-                : "שמירת האחוזים"}
+                : "שמירת נתוני הבוחן"}
             </button>
           )}
 
@@ -1045,132 +1438,184 @@ export default function TestPage() {
    COMPONENTS
 ========================================================= */
 
-function PercentInputCard({
+function PercentInput({
   title,
   value,
   disabled,
   onChange,
-  helper,
 }: {
   title: string;
   value: number;
   disabled: boolean;
-  onChange: (
-    value: string
-  ) => void;
-  helper: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm p-5">
-
-      <label className="block text-sm font-bold text-slate-900 mb-3">
-        {title}
-      </label>
-
-      <div className="relative">
-
-        <input
-          disabled={
-            disabled
-          }
-          type="number"
-          min={0}
-          max={100}
-          step={0.1}
-          value={
-            value
-          }
-          onChange={(
-            event
-          ) =>
-            onChange(
-              event.target.value
-            )
-          }
-          className="w-full border border-slate-300 rounded-xl pr-4 pl-12 py-3 text-2xl font-bold text-slate-900 bg-white disabled:bg-slate-50"
-        />
-
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">
-          %
-        </span>
-
-      </div>
-
-      <p className="text-xs text-slate-500 mt-3 leading-5">
-        {helper}
-      </p>
-
-    </div>
-  );
-}
-
-function ReadOnlyPercentCard({
-  title,
-  value,
-  helper,
-}: {
-  title: string;
-  value: number;
-  helper: string;
+  onChange:
+    (value: string) =>
+      void;
 }) {
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
 
-      <p className="text-sm font-bold text-slate-900 mb-3">
+      <label className="block text-sm font-bold mb-3">
+        {title}
+      </label>
+
+      <input
+        type="number"
+        min={0}
+        max={100}
+        step={0.1}
+        disabled={
+          disabled
+        }
+        value={
+          value
+        }
+        onChange={(
+          event
+        ) =>
+          onChange(
+            event.target.value
+          )
+        }
+        className="w-full border border-slate-300 rounded-xl px-4 py-3 text-2xl font-bold bg-white"
+      />
+
+    </div>
+  );
+}
+
+function ReadOnlyPercent({
+  title,
+  value,
+}: {
+  title: string;
+  value: number;
+}) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+
+      <p className="text-sm font-bold mb-3">
         {title}
       </p>
 
-      <p className="text-3xl font-bold text-slate-900">
+      <p className="text-3xl font-bold">
         {formatPercent(
           value
         )}
       </p>
 
-      <p className="text-xs text-slate-500 mt-3 leading-5">
-        {helper}
+      <p className="text-xs text-slate-500 mt-2">
+        מחושב אוטומטית
       </p>
 
     </div>
   );
 }
 
-function SummaryCard({
-  title,
+function MetricCard({
+  definition,
   value,
-  tone,
+  disabled,
+  onAverageChange,
+  onFailedChange,
 }: {
-  title: string;
-  value: number;
-  tone:
-    | "success"
-    | "danger"
-    | "excellent";
+  definition:
+    MetricDefinition;
+
+  value:
+    MetricValue;
+
+  disabled:
+    boolean;
+
+  onAverageChange:
+    (value: string) =>
+      void;
+
+  onFailedChange:
+    (value: string) =>
+      void;
 }) {
-  const styles = {
-    success:
-      "bg-green-50 border-green-100 text-green-700",
-
-    danger:
-      "bg-red-50 border-red-100 text-red-700",
-
-    excellent:
-      "bg-sky-50 border-sky-200 text-sky-700",
-  };
-
   return (
-    <div
-      className={`border rounded-2xl p-5 ${styles[tone]}`}
-    >
+    <div className="border border-slate-200 rounded-2xl p-5">
 
-      <p className="text-sm font-bold">
-        {title}
-      </p>
+      <h3 className="text-lg font-bold">
+        {definition.title}
+      </h3>
 
-      <p className="text-4xl font-bold mt-2">
-        {formatPercent(
-          value
-        )}
-      </p>
+      {!definition.failureOnly && (
+        <label className="block mt-4">
+
+          <span className="block text-xs font-bold text-slate-500 mb-2">
+            {definition.averageLabel}
+          </span>
+
+          <input
+            type="text"
+            disabled={
+              disabled
+            }
+            value={
+              value.average ??
+              ""
+            }
+            onChange={(
+              event
+            ) =>
+              onAverageChange(
+                event.target.value
+              )
+            }
+            placeholder={
+              definition.averagePlaceholder
+            }
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white"
+          />
+
+        </label>
+      )}
+
+      <label className="block mt-4">
+
+        <span className="block text-xs font-bold text-red-700 mb-2">
+          {definition.failedLabel}
+        </span>
+
+        <div className="relative">
+
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={0.1}
+            disabled={
+              disabled
+            }
+            value={
+              value.failedPercent
+            }
+            onChange={(
+              event
+            ) =>
+              onFailedChange(
+                event.target.value
+              )
+            }
+            className="w-full border border-red-200 rounded-xl px-4 py-3 pl-10 bg-white font-bold"
+          />
+
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-red-600 font-bold">
+            %
+          </span>
+
+        </div>
+
+      </label>
+
+      {definition.failureOnly && (
+        <p className="text-xs text-slate-500 mt-3">
+          בפרמטר זה נשמר אחוז אי־עמידה בלבד, ללא ממוצע.
+        </p>
+      )}
 
     </div>
   );
