@@ -251,6 +251,90 @@ function normalizeRow(
   };
 }
 
+
+function signedPercent(
+  value: number
+) {
+  const rounded =
+    Math.round(value * 10) / 10;
+
+  if (rounded > 0) {
+    return `+${rounded}%`;
+  }
+
+  return `${rounded}%`;
+}
+
+function trendForHigherIsBetter(
+  first: number,
+  latest: number
+) {
+  const change =
+    latest - first;
+
+  if (Math.abs(change) < 0.05) {
+    return {
+      label: "ללא שינוי",
+      value: "0%",
+      className:
+        "text-slate-600 bg-slate-100",
+    };
+  }
+
+  if (change > 0) {
+    return {
+      label: "שיפור",
+      value:
+        signedPercent(change),
+      className:
+        "text-green-700 bg-green-50",
+    };
+  }
+
+  return {
+    label: "ירידה",
+    value:
+      signedPercent(change),
+    className:
+      "text-red-700 bg-red-50",
+  };
+}
+
+function trendForLowerIsBetter(
+  first: number,
+  latest: number
+) {
+  const change =
+    latest - first;
+
+  if (Math.abs(change) < 0.05) {
+    return {
+      label: "ללא שינוי",
+      value: "0%",
+      className:
+        "text-slate-600 bg-slate-100",
+    };
+  }
+
+  if (change < 0) {
+    return {
+      label: "שיפור",
+      value:
+        signedPercent(change),
+      className:
+        "text-green-700 bg-green-50",
+    };
+  }
+
+  return {
+    label: "החמרה",
+    value:
+      signedPercent(change),
+    className:
+      "text-red-700 bg-red-50",
+  };
+}
+
 /* =========================================================
    PAGE
 ========================================================= */
@@ -650,7 +734,7 @@ export default function PercentageSummaryPage() {
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 
           <TopCard
-            title="ממוצע עוברים"
+            title="ממוצע מעבר"
             value={
               formatPercent(
                 averagePassed
@@ -660,7 +744,7 @@ export default function PercentageSummaryPage() {
           />
 
           <TopCard
-            title="ממוצע נכשלים"
+            title="ממוצע כישלון"
             value={
               formatPercent(
                 averageFailed
@@ -860,6 +944,23 @@ export default function PercentageSummaryPage() {
                         </div>
                       )}
 
+                      {attempts.length >= 2 && (
+                        <TrendSection
+                          first={
+                            attempts[0]
+                          }
+                          latest={
+                            attempts[
+                              attempts.length -
+                                1
+                            ]
+                          }
+                          metricDefinitions={
+                            metricDefinitions
+                          }
+                        />
+                      )}
+
                       <div className="mt-7">
 
                         <p className="text-sm font-bold text-slate-700">
@@ -1009,6 +1110,239 @@ export default function PercentageSummaryPage() {
 /* =========================================================
    COMPONENTS
 ========================================================= */
+
+
+function TrendSection({
+  first,
+  latest,
+  metricDefinitions,
+}: {
+  first: PercentageResult;
+  latest: PercentageResult;
+  metricDefinitions:
+    MetricDefinition[];
+}) {
+  const passTrend =
+    trendForHigherIsBetter(
+      first.passedPercent,
+      latest.passedPercent
+    );
+
+  const failTrend =
+    trendForLowerIsBetter(
+      first.failedPercent,
+      latest.failedPercent
+    );
+
+  const excellentTrend =
+    trendForHigherIsBetter(
+      first.excellentPercent,
+      latest.excellentPercent
+    );
+
+  return (
+    <div className="mt-7 border-t border-slate-100 pt-7">
+
+      <div>
+        <h3 className="text-lg font-bold">
+          מגמת שיפור
+        </h3>
+
+        <p className="text-sm text-slate-500 mt-1">
+          השוואה בין{" "}
+          {getAttemptLabel(
+            first.attempt
+          )}{" "}
+          לבין{" "}
+          {getAttemptLabel(
+            latest.attempt
+          )}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+
+        <TrendCard
+          title="עוברים"
+          first={
+            first.passedPercent
+          }
+          latest={
+            latest.passedPercent
+          }
+          trend={
+            passTrend
+          }
+        />
+
+        <TrendCard
+          title="נכשלים"
+          first={
+            first.failedPercent
+          }
+          latest={
+            latest.failedPercent
+          }
+          trend={
+            failTrend
+          }
+        />
+
+        <TrendCard
+          title="מצטיינים"
+          first={
+            first.excellentPercent
+          }
+          latest={
+            latest.excellentPercent
+          }
+          trend={
+            excellentTrend
+          }
+        />
+
+      </div>
+
+      {metricDefinitions.length >
+        0 && (
+        <div className="mt-5">
+
+          <p className="text-sm font-bold text-slate-700">
+            שינוי באחוזי אי־עמידה לפי פרמטר
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-3">
+
+            {metricDefinitions.map(
+              (metric) => {
+                const firstFailed =
+                  first.metrics[
+                    metric.key
+                  ]?.failedPercent ??
+                  0;
+
+                const latestFailed =
+                  latest.metrics[
+                    metric.key
+                  ]?.failedPercent ??
+                  0;
+
+                const trend =
+                  trendForLowerIsBetter(
+                    firstFailed,
+                    latestFailed
+                  );
+
+                return (
+                  <TrendCard
+                    key={
+                      metric.key
+                    }
+                    title={
+                      metric.title
+                    }
+                    first={
+                      firstFailed
+                    }
+                    latest={
+                      latestFailed
+                    }
+                    trend={
+                      trend
+                    }
+                    failureMetric
+                  />
+                );
+              }
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function TrendCard({
+  title,
+  first,
+  latest,
+  trend,
+  failureMetric = false,
+}: {
+  title: string;
+  first: number;
+  latest: number;
+  trend: {
+    label: string;
+    value: string;
+    className: string;
+  };
+  failureMetric?: boolean;
+}) {
+  return (
+    <div className="border border-slate-200 rounded-2xl p-4 bg-white">
+
+      <div className="flex items-start justify-between gap-3">
+
+        <div>
+          <p className="font-bold">
+            {title}
+          </p>
+
+          {failureMetric && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              אחוז אי־עמידה
+            </p>
+          )}
+        </div>
+
+        <span
+          className={`rounded-lg px-2.5 py-1 text-xs font-bold ${trend.className}`}
+        >
+          {trend.label}{" "}
+          {trend.value}
+        </span>
+
+      </div>
+
+      <div className="flex items-center gap-3 mt-4">
+
+        <div>
+          <p className="text-xs text-slate-400">
+            ראשון
+          </p>
+
+          <p className="text-xl font-bold">
+            {formatPercent(
+              first
+            )}
+          </p>
+        </div>
+
+        <span className="text-slate-300 text-xl">
+          ←
+        </span>
+
+        <div>
+          <p className="text-xs text-slate-400">
+            אחרון
+          </p>
+
+          <p className="text-xl font-bold">
+            {formatPercent(
+              latest
+            )}
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
 
 function TopCard({
   title,
