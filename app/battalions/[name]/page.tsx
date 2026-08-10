@@ -508,7 +508,14 @@ export default function BattalionPage() {
           >
             חזרה לדף הבית
           </Link>
-
+<Link
+  href={`/battalions/${encodeURIComponent(
+    battalionName
+  )}/training-plan`}
+  className="inline-block mt-3 mr-3 bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-bold"
+>
+  📅 תוכנית אימונים
+</Link>
         </div>
       </main>
     );
