@@ -38,6 +38,7 @@ type PercentageRow = {
   test_name: string;
   attempt: number | null;
   company: string | null;
+  test_date: string | null;
   passed_percent: number | null;
   failed_percent: number | null;
   excellent_percent: number | null;
@@ -47,6 +48,8 @@ type PercentageRow = {
 type PercentageResult = {
   testName: string;
   attempt: number;
+  company: string;
+  testDate: string;
   passedPercent: number;
   failedPercent: number;
   excellentPercent: number;
@@ -68,6 +71,31 @@ type MetricDefinition = {
 /* =========================================================
    CONFIG
 ========================================================= */
+
+const COMPANY_COUNTS: Record<string, number> = {
+  "דקל": 4,
+  "רימון": 4,
+  "גפן": 4,
+  "דולב": 2,
+  "חרוב": 4,
+};
+
+const COMPANY_NAMES = [
+  "פלוגה א׳",
+  "פלוגה ב׳",
+  "פלוגה ג׳",
+  "פלוגה ד׳",
+  "פלוגה ה׳",
+];
+
+function getCompanies(
+  battalion: string
+) {
+  return COMPANY_NAMES.slice(
+    0,
+    COMPANY_COUNTS[battalion] ?? 5
+  );
+}
 
 const STAFF_BATTALIONS =
   new Set([
@@ -228,6 +256,14 @@ function normalizeRow(
       row.attempt ??
       1,
 
+    company:
+      row.company ??
+      "כלל הגדוד",
+
+    testDate:
+      row.test_date ??
+      "",
+
     passedPercent:
       Number(
         row.passed_percent ??
@@ -379,6 +415,31 @@ export default function PercentageSummaryPage() {
     >([]);
 
   const [
+    companyRows,
+    setCompanyRows,
+  ] =
+    useState<
+      PercentageResult[]
+    >([]);
+
+  const [
+    viewMode,
+    setViewMode,
+  ] =
+    useState<
+      "general" | "companies"
+    >("general");
+
+  const companies =
+    useMemo(
+      () =>
+        getCompanies(
+          battalionName
+        ),
+      [battalionName]
+    );
+
+  const [
     loading,
     setLoading,
   ] =
@@ -430,6 +491,7 @@ export default function PercentageSummaryPage() {
               test_name,
               attempt,
               company,
+              test_date,
               passed_percent,
               failed_percent,
               excellent_percent,
@@ -498,6 +560,74 @@ export default function PercentageSummaryPage() {
           normalizeRow
         )
       );
+
+      const {
+        data: companyData,
+        error: companyError,
+      } =
+        await supabase
+          .from(
+            "percentage_test_results"
+          )
+          .select(
+            `
+              test_name,
+              attempt,
+              company,
+              test_date,
+              passed_percent,
+              failed_percent,
+              excellent_percent,
+              metrics
+            `
+          )
+          .eq(
+            "cycle_id",
+            cycleId
+          )
+          .eq(
+            "battalion",
+            battalionName
+          )
+          .neq(
+            "company",
+            "כלל הגדוד"
+          )
+          .order(
+            "test_name",
+            { ascending: true }
+          )
+          .order(
+            "attempt",
+            { ascending: true }
+          );
+
+      if (
+        !cancelled
+      ) {
+        if (
+          companyError
+        ) {
+          console.error(
+            "Company comparison load error:",
+            companyError
+          );
+          setCompanyRows(
+            []
+          );
+        } else {
+          setCompanyRows(
+            (
+              (
+                companyData ??
+                []
+              ) as PercentageRow[]
+            ).map(
+              normalizeRow
+            )
+          );
+        }
+      }
 
       setLoading(
         false
@@ -645,6 +775,148 @@ export default function PercentageSummaryPage() {
       latestResults,
     ]);
 
+  const companyComparison =
+    useMemo(() => {
+      return companies.map(
+        (company) => {
+          const companyData =
+            companyRows.filter(
+              (row) =>
+                row.company ===
+                company
+            );
+
+          const latestByTest =
+            tests
+              .map((test) => {
+                const attempts =
+                  companyData
+                    .filter(
+                      (row) =>
+                        row.testName ===
+                        test.name
+                    )
+                    .sort(
+                      (a, b) =>
+                        a.attempt -
+                        b.attempt
+                    );
+
+                return attempts.length
+                  ? attempts[
+                      attempts.length - 1
+                    ]
+                  : null;
+              })
+              .filter(
+                (
+                  item
+                ): item is PercentageResult =>
+                  item !== null
+              );
+
+          const avg = (
+            key:
+              | "passedPercent"
+              | "failedPercent"
+              | "excellentPercent"
+          ) =>
+            latestByTest.length
+              ? latestByTest.reduce(
+                  (sum, item) =>
+                    sum +
+                    item[key],
+                  0
+                ) /
+                latestByTest.length
+              : null;
+
+          let improvement:
+            number | null =
+            null;
+
+          for (
+            const test of tests
+          ) {
+            const attempts =
+              companyData
+                .filter(
+                  (row) =>
+                    row.testName ===
+                    test.name
+                )
+                .sort(
+                  (a, b) =>
+                    a.attempt -
+                    b.attempt
+                );
+
+            if (
+              attempts.length >=
+              2
+            ) {
+              const change =
+                attempts[
+                  attempts.length -
+                    1
+                ].passedPercent -
+                attempts[0]
+                  .passedPercent;
+
+              improvement =
+                improvement ===
+                null
+                  ? change
+                  : Math.max(
+                      improvement,
+                      change
+                    );
+            }
+          }
+
+          return {
+            company,
+            latestByTest,
+            passed:
+              avg(
+                "passedPercent"
+              ),
+            failed:
+              avg(
+                "failedPercent"
+              ),
+            excellent:
+              avg(
+                "excellentPercent"
+              ),
+            improvement,
+          };
+        }
+      );
+    }, [
+      companies,
+      companyRows,
+      tests,
+    ]);
+
+  const rankedCompanies =
+    useMemo(
+      () =>
+        companyComparison
+          .filter(
+            (item) =>
+              item.passed !==
+              null
+          )
+          .slice()
+          .sort(
+            (a, b) =>
+              (b.passed ?? 0) -
+              (a.passed ?? 0)
+          ),
+      [companyComparison]
+    );
+
   if (loading) {
     return (
       <main
@@ -737,6 +1009,55 @@ export default function PercentageSummaryPage() {
 
         </section>
 
+        <section className="bg-white rounded-2xl shadow-sm p-2 mb-8 inline-flex gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setViewMode(
+                "general"
+              )
+            }
+            className={`rounded-xl px-5 py-3 font-bold ${
+              viewMode ===
+              "general"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            כלל הגדוד
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setViewMode(
+                "companies"
+              )
+            }
+            className={`rounded-xl px-5 py-3 font-bold ${
+              viewMode ===
+              "companies"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            השוואת פלוגות
+          </button>
+        </section>
+
+        {viewMode ===
+        "companies" ? (
+          <CompanyComparisonSection
+            items={
+              companyComparison
+            }
+            ranked={
+              rankedCompanies
+            }
+            tests={tests}
+          />
+        ) : (
+          <>
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 
           <TopCard
@@ -1101,6 +1422,9 @@ export default function PercentageSummaryPage() {
 
         </section>
 
+          </>
+        )}
+
         {message && (
           <section className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 mt-8">
             {message}
@@ -1117,6 +1441,289 @@ export default function PercentageSummaryPage() {
    COMPONENTS
 ========================================================= */
 
+
+function CompanyComparisonSection({
+  items,
+  ranked,
+  tests,
+}: {
+  items: {
+    company: string;
+    latestByTest:
+      PercentageResult[];
+    passed: number | null;
+    failed: number | null;
+    excellent: number | null;
+    improvement: number | null;
+  }[];
+  ranked: {
+    company: string;
+    latestByTest:
+      PercentageResult[];
+    passed: number | null;
+    failed: number | null;
+    excellent: number | null;
+    improvement: number | null;
+  }[];
+  tests: BattalionTest[];
+}) {
+  const leader =
+    ranked[0] ?? null;
+
+  const highestFailure =
+    items
+      .filter(
+        (item) =>
+          item.failed !== null
+      )
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.failed ?? 0) -
+          (a.failed ?? 0)
+      )[0] ?? null;
+
+  const bestImprovement =
+    items
+      .filter(
+        (item) =>
+          item.improvement !==
+          null
+      )
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.improvement ?? 0) -
+          (a.improvement ?? 0)
+      )[0] ?? null;
+
+  return (
+    <section className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-green-50 border border-green-100 rounded-3xl p-5">
+          <p className="text-sm font-bold text-green-700">
+            הפלוגה המובילה
+          </p>
+          <p className="text-2xl font-black mt-2">
+            {leader?.company ??
+              "—"}
+          </p>
+          <p className="text-green-700 font-bold mt-1">
+            {formatPercent(
+              leader?.passed ??
+                null
+            )}{" "}
+            מעבר ממוצע
+          </p>
+        </div>
+
+        <div className="bg-red-50 border border-red-100 rounded-3xl p-5">
+          <p className="text-sm font-bold text-red-700">
+            אחוז הכישלון הגבוה
+          </p>
+          <p className="text-2xl font-black mt-2">
+            {highestFailure?.company ??
+              "—"}
+          </p>
+          <p className="text-red-700 font-bold mt-1">
+            {formatPercent(
+              highestFailure?.failed ??
+                null
+            )}
+          </p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5">
+          <p className="text-sm font-bold text-blue-700">
+            השיפור הגדול ביותר
+          </p>
+          <p className="text-2xl font-black mt-2">
+            {bestImprovement?.company ??
+              "—"}
+          </p>
+          <p className="text-blue-700 font-bold mt-1">
+            {bestImprovement?.improvement !==
+            null &&
+            bestImprovement?.improvement !==
+            undefined
+              ? signedPercent(
+                  bestImprovement.improvement
+                )
+              : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-100">
+          <h2 className="text-xl font-black">
+            השוואת פלוגות
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            הנתונים מבוססים על המועד האחרון שהוזן בכל בוחן לכל פלוגה.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-right">
+            <thead className="bg-slate-50 text-slate-600 text-sm">
+              <tr>
+                <th className="p-4">
+                  פלוגה
+                </th>
+                <th className="p-4">
+                  מעבר
+                </th>
+                <th className="p-4">
+                  כישלון
+                </th>
+                <th className="p-4">
+                  מצטיינים
+                </th>
+                <th className="p-4">
+                  בוחן אחרון
+                </th>
+                <th className="p-4">
+                  תאריך
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {items.map(
+                (item) => {
+                  const latest =
+                    item.latestByTest
+                      .slice()
+                      .sort(
+                        (a, b) =>
+                          (
+                            b.testDate ||
+                            ""
+                          ).localeCompare(
+                            a.testDate ||
+                            ""
+                          )
+                      )[0] ??
+                    null;
+
+                  return (
+                    <tr
+                      key={
+                        item.company
+                      }
+                      className="border-t border-slate-100"
+                    >
+                      <td className="p-4 font-black">
+                        {item.company}
+                      </td>
+                      <td className="p-4 text-green-700 font-bold">
+                        {formatPercent(
+                          item.passed
+                        )}
+                      </td>
+                      <td className="p-4 text-red-700 font-bold">
+                        {formatPercent(
+                          item.failed
+                        )}
+                      </td>
+                      <td className="p-4 text-sky-700 font-bold">
+                        {formatPercent(
+                          item.excellent
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {latest
+                          ? `${latest.testName} • ${getAttemptLabel(
+                              latest.attempt
+                            )}`
+                          : "—"}
+                      </td>
+                      <td className="p-4">
+                        {latest?.testDate
+                          ? new Date(
+                              `${latest.testDate}T00:00:00`
+                            ).toLocaleDateString(
+                              "he-IL"
+                            )
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                }
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        {tests.map(
+          (test) => (
+            <div
+              key={test.id}
+              className="bg-white rounded-3xl shadow-sm p-5"
+            >
+              <h3 className="text-lg font-black">
+                {test.name}
+              </h3>
+              <div className="space-y-3 mt-4">
+                {items.map(
+                  (item) => {
+                    const latest =
+                      item.latestByTest.find(
+                        (row) =>
+                          row.testName ===
+                          test.name
+                      );
+
+                    return (
+                      <div
+                        key={
+                          item.company
+                        }
+                        className="flex items-center justify-between gap-3 bg-slate-50 rounded-2xl p-3"
+                      >
+                        <span className="font-bold">
+                          {item.company}
+                        </span>
+                        {latest ? (
+                          <div className="text-sm flex flex-wrap gap-3">
+                            <span className="text-green-700 font-bold">
+                              עברו{" "}
+                              {formatPercent(
+                                latest.passedPercent
+                              )}
+                            </span>
+                            <span className="text-red-700 font-bold">
+                              נכשלו{" "}
+                              {formatPercent(
+                                latest.failedPercent
+                              )}
+                            </span>
+                            <span className="text-slate-500">
+                              {getAttemptLabel(
+                                latest.attempt
+                              )}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">
+                            אין נתונים
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    </section>
+  );
+}
 
 function TrendSection({
   first,

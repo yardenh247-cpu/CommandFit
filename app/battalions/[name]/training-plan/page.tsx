@@ -50,6 +50,36 @@ type CloudTrainingSession = {
   status: TrainingStatus;
 };
 
+type CompanyExecution = {
+  id?: number;
+  sessionId: number;
+  company: string;
+  status: TrainingStatus;
+};
+
+type CloudCompanyExecution = {
+  id: number;
+  session_id: number;
+  company: string;
+  status: TrainingStatus;
+};
+
+type CompanyOnlySession = {
+  id: number;
+  weekNumber: number;
+  trainingType: string;
+  company: string;
+  status: TrainingStatus;
+};
+
+type CloudCompanyOnlySession = {
+  id: number;
+  week_number: number;
+  training_type: string;
+  company: string;
+  status: TrainingStatus;
+};
+
 /* =========================================================
    CONFIG
 ========================================================= */
@@ -74,6 +104,31 @@ const TRAINING_TYPES = [
   "לורן",
   "לורן משופר",
 ];
+
+const COMPANY_COUNTS: Record<string, number> = {
+  "דקל": 4,
+  "רימון": 4,
+  "גפן": 4,
+  "דולב": 2,
+  "חרוב": 4,
+};
+
+const COMPANY_NAMES = [
+  "פלוגה א׳",
+  "פלוגה ב׳",
+  "פלוגה ג׳",
+  "פלוגה ד׳",
+  "פלוגה ה׳",
+];
+
+function getCompanies(
+  battalion: string
+) {
+  return COMPANY_NAMES.slice(
+    0,
+    COMPANY_COUNTS[battalion] ?? 5
+  );
+}
 
 /* =========================================================
    HELPERS
@@ -150,6 +205,51 @@ export default function TrainingPlanPage() {
     >([]);
 
   const [
+    companyExecutions,
+    setCompanyExecutions,
+  ] =
+    useState<
+      CompanyExecution[]
+    >([]);
+
+  const [
+    selectedScope,
+    setSelectedScope,
+  ] =
+    useState("כלל הגדוד");
+
+  const [
+    showComparison,
+    setShowComparison,
+  ] =
+    useState(false);
+
+  const companies =
+    useMemo(
+      () =>
+        getCompanies(
+          battalionName
+        ),
+      [battalionName]
+    );
+
+  const [
+    companyOnlySessions,
+    setCompanyOnlySessions,
+  ] =
+    useState<
+      CompanyOnlySession[]
+    >([]);
+
+  const [
+    selectedCompanyTraining,
+    setSelectedCompanyTraining,
+  ] =
+    useState<
+      Record<number, string>
+    >({});
+
+  const [
     selectedTraining,
     setSelectedTraining,
   ] =
@@ -177,6 +277,14 @@ export default function TrainingPlanPage() {
     getMinimumTrainings(
       battalionName
     );
+
+  useEffect(() => {
+    if (isViewer) {
+      setSelectedScope(
+        "כלל הגדוד"
+      );
+    }
+  }, [isViewer]);
 
   /* =======================================================
      LOAD
@@ -323,6 +431,114 @@ export default function TrainingPlanPage() {
         )
       );
 
+      const {
+        data: executionData,
+        error: executionError,
+      } =
+        await supabase
+          .from(
+            "commandfit_training_company_executions"
+          )
+          .select(
+            "id,session_id,company,status"
+          )
+          .eq(
+            "cycle_id",
+            cycleId
+          )
+          .eq(
+            "battalion",
+            battalionName
+          );
+
+      if (executionError) {
+        console.error(
+          "Company executions load error:",
+          executionError
+        );
+      } else {
+        setCompanyExecutions(
+          (
+            (
+              executionData ??
+              []
+            ) as CloudCompanyExecution[]
+          ).map(
+            (row) => ({
+              id: row.id,
+              sessionId:
+                row.session_id,
+              company:
+                row.company,
+              status:
+                row.status ??
+                "planned",
+            })
+          )
+        );
+      }
+
+      const {
+        data: companySessionData,
+        error: companySessionError,
+      } =
+        await supabase
+          .from(
+            "commandfit_training_company_sessions"
+          )
+          .select(
+            "id,week_number,training_type,company,status"
+          )
+          .eq(
+            "cycle_id",
+            cycleId
+          )
+          .eq(
+            "battalion",
+            battalionName
+          )
+          .order(
+            "week_number",
+            {
+              ascending: true,
+            }
+          )
+          .order(
+            "id",
+            {
+              ascending: true,
+            }
+          );
+
+      if (companySessionError) {
+        console.error(
+          "Company-only sessions load error:",
+          companySessionError
+        );
+      } else {
+        setCompanyOnlySessions(
+          (
+            (
+              companySessionData ??
+              []
+            ) as CloudCompanyOnlySession[]
+          ).map(
+            (row) => ({
+              id: row.id,
+              weekNumber:
+                row.week_number,
+              trainingType:
+                row.training_type,
+              company:
+                row.company,
+              status:
+                row.status ??
+                "planned",
+            })
+          )
+        );
+      }
+
       setLoading(false);
     }
 
@@ -366,6 +582,436 @@ export default function TrainingPlanPage() {
       (session) =>
         session.weekNumber ===
         weekNumber
+    );
+  }
+
+  function getCompanyStatus(
+    sessionId: number,
+    company: string
+  ): TrainingStatus {
+    return (
+      companyExecutions.find(
+        (item) =>
+          item.sessionId ===
+            sessionId &&
+          item.company ===
+            company
+      )?.status ??
+      "planned"
+    );
+  }
+
+  async function setCompanyStatus(
+    session: TrainingSession,
+    company: string,
+    status: TrainingStatus
+  ) {
+    if (readOnly) {
+      return;
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(
+          "commandfit_training_company_executions"
+        )
+        .upsert(
+          {
+            cycle_id:
+              cycleId,
+            battalion:
+              battalionName,
+            session_id:
+              session.id,
+            company,
+            status,
+            updated_at:
+              new Date().toISOString(),
+          },
+          {
+            onConflict:
+              "session_id,company",
+          }
+        )
+        .select(
+          "id,session_id,company,status"
+        )
+        .single();
+
+    if (error || !data) {
+      setMessage(
+        `עדכון ביצוע הפלוגה נכשל: ${
+          error?.message ??
+          "שגיאה"
+        }`
+      );
+      return;
+    }
+
+    setCompanyExecutions(
+      (current) => {
+        const without =
+          current.filter(
+            (item) =>
+              !(
+                item.sessionId ===
+                  session.id &&
+                item.company ===
+                  company
+              )
+          );
+
+        return [
+          ...without,
+          {
+            id: data.id,
+            sessionId:
+              data.session_id,
+            company:
+              data.company,
+            status:
+              data.status ??
+              "planned",
+          },
+        ];
+      }
+    );
+
+    setMessage(
+      `${company}: ${session.trainingType} עודכן`
+    );
+  }
+
+  const companySummary =
+    useMemo(() => {
+      return companies.map(
+        (company) => {
+          const completedSessions =
+            sessions.filter(
+              (session) =>
+                getCompanyStatus(
+                  session.id,
+                  company
+                ) ===
+                "completed"
+            );
+
+          const companyExtras =
+            companyOnlySessions.filter(
+              (session) =>
+                session.company ===
+                  company
+            );
+
+          const completedExtras =
+            companyExtras.filter(
+              (session) =>
+                session.status ===
+                "completed"
+            );
+
+          const allCompletedTypes = [
+            ...completedSessions.map(
+              (session) =>
+                session.trainingType
+            ),
+            ...completedExtras.map(
+              (session) =>
+                session.trainingType
+            ),
+          ];
+
+          const byType =
+            TRAINING_TYPES.map(
+              (type) => ({
+                type,
+                count:
+                  allCompletedTypes.filter(
+                    (trainingType) =>
+                      trainingType ===
+                      type
+                  ).length,
+              })
+            ).filter(
+              (item) =>
+                item.count > 0
+            );
+
+          const plannedTotal =
+            sessions.length +
+            companyExtras.length;
+
+          return {
+            company,
+            total:
+              completedSessions.length +
+              completedExtras.length,
+            planned:
+              plannedTotal,
+            completion:
+              plannedTotal > 0
+                ? Math.round(
+                    (
+                      completedSessions.length +
+                      completedExtras.length
+                    ) /
+                      plannedTotal *
+                      100
+                  )
+                : 0,
+            byType,
+          };
+        }
+      );
+    }, [
+      companies,
+      companyExecutions,
+      companyOnlySessions,
+      sessions,
+    ]);
+
+  const trainingComparison =
+    useMemo(() => {
+      const active =
+        companySummary.filter(
+          (item) =>
+            item.planned > 0
+        );
+
+      const leader =
+        active.length > 0
+          ? [...active].sort(
+              (a, b) =>
+                b.completion -
+                a.completion
+            )[0]
+          : null;
+
+      const lowest =
+        active.length > 0
+          ? [...active].sort(
+              (a, b) =>
+                a.completion -
+                b.completion
+            )[0]
+          : null;
+
+      const averageCompletion =
+        active.length > 0
+          ? Math.round(
+              active.reduce(
+                (sum, item) =>
+                  sum +
+                  item.completion,
+                0
+              ) /
+                active.length
+            )
+          : 0;
+
+      const typeRows =
+        TRAINING_TYPES.map(
+          (type) => ({
+            type,
+            counts:
+              companySummary.map(
+                (item) => ({
+                  company:
+                    item.company,
+                  count:
+                    item.byType.find(
+                      (row) =>
+                        row.type ===
+                        type
+                    )?.count ??
+                    0,
+                })
+              ),
+          })
+        ).filter(
+          (row) =>
+            row.counts.some(
+              (item) =>
+                item.count > 0
+            )
+        );
+
+      return {
+        leader,
+        lowest,
+        averageCompletion,
+        typeRows,
+      };
+    }, [
+      companySummary,
+    ]);
+
+  async function addCompanyOnlyTraining(
+    weekNumber: number
+  ) {
+    if (
+      readOnly ||
+      selectedScope ===
+        "כלל הגדוד"
+    ) {
+      return;
+    }
+
+    const trainingType =
+      selectedCompanyTraining[
+        weekNumber
+      ] ??
+      TRAINING_TYPES[0];
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(
+          "commandfit_training_company_sessions"
+        )
+        .insert({
+          cycle_id:
+            cycleId,
+          battalion:
+            battalionName,
+          company:
+            selectedScope,
+          week_number:
+            weekNumber,
+          training_type:
+            trainingType,
+          status:
+            "planned",
+        })
+        .select(
+          "id,week_number,training_type,company,status"
+        )
+        .single();
+
+    if (error || !data) {
+      setMessage(
+        `הוספת אימון לפלוגה נכשלה: ${
+          error?.message ??
+          "שגיאה"
+        }`
+      );
+      return;
+    }
+
+    setCompanyOnlySessions(
+      (current) => [
+        ...current,
+        {
+          id: data.id,
+          weekNumber:
+            data.week_number,
+          trainingType:
+            data.training_type,
+          company:
+            data.company,
+          status:
+            data.status ??
+            "planned",
+        },
+      ]
+    );
+
+    setMessage(
+      `${trainingType} נוסף ל${selectedScope} בלבד`
+    );
+  }
+
+  async function setCompanyOnlyStatus(
+    session: CompanyOnlySession,
+    status: TrainingStatus
+  ) {
+    if (readOnly) {
+      return;
+    }
+
+    const { error } =
+      await supabase
+        .from(
+          "commandfit_training_company_sessions"
+        )
+        .update({
+          status,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq(
+          "id",
+          session.id
+        );
+
+    if (error) {
+      setMessage(
+        `עדכון אימון פלוגתי נכשל: ${error.message}`
+      );
+      return;
+    }
+
+    setCompanyOnlySessions(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id ===
+            session.id
+              ? {
+                  ...item,
+                  status,
+                }
+              : item
+        )
+    );
+  }
+
+  async function deleteCompanyOnlyTraining(
+    session: CompanyOnlySession
+  ) {
+    if (readOnly) {
+      return;
+    }
+
+    const approved =
+      window.confirm(
+        `למחוק את ${session.trainingType} מ${session.company}?`
+      );
+
+    if (!approved) {
+      return;
+    }
+
+    const { error } =
+      await supabase
+        .from(
+          "commandfit_training_company_sessions"
+        )
+        .delete()
+        .eq(
+          "id",
+          session.id
+        );
+
+    if (error) {
+      setMessage(
+        `מחיקת אימון פלוגתי נכשלה: ${error.message}`
+      );
+      return;
+    }
+
+    setCompanyOnlySessions(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !==
+            session.id
+        )
     );
   }
 
@@ -932,13 +1578,271 @@ export default function TrainingPlanPage() {
           </div>
         )}
 
+        {totalWeeks > 0 && (
+          <>
+            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+              <h2 className="text-xl font-black">
+                תצוגת תוכנית
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                {isViewer
+                  ? "תצוגת מפקד – ניתן לצפות בהשוואת עומסי האימון בין הפלוגות."
+                  : "התוכנית הגדודית היא תוכנית המקור. בכל פלוגה מסמנים בנפרד מה בוצע בפועל."}
+              </p>
+
+              {!isViewer && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {[
+                    "כלל הגדוד",
+                    ...companies,
+                  ].map(
+                    (scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        onClick={() =>
+                          setSelectedScope(
+                            scope
+                          )
+                        }
+                        className={
+                          selectedScope ===
+                          scope
+                            ? "bg-slate-900 text-white rounded-xl px-4 py-2 font-bold"
+                            : "bg-slate-100 text-slate-700 rounded-xl px-4 py-2 font-bold"
+                        }
+                      >
+                        {scope}
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black">
+                    השוואת עומסי אימון
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    השוואת ביצוע בין הפלוגות לפי התוכנית הגדודית והאימונים הפלוגתיים הנוספים.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowComparison(
+                      (current) =>
+                        !current
+                    )
+                  }
+                  className={
+                    showComparison
+                      ? "bg-blue-700 text-white rounded-xl px-5 py-3 font-black"
+                      : "bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-5 py-3 font-black"
+                  }
+                >
+                  {showComparison
+                    ? "סגור השוואה"
+                    : "📊 פתח השוואת פלוגות"}
+                </button>
+              </div>
+
+              {showComparison && (
+                <div className="mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
+                      <p className="text-sm font-bold text-green-700">
+                        הפלוגה המובילה
+                      </p>
+                      <p className="text-2xl font-black mt-1">
+                        {trainingComparison.leader?.company ?? "—"}
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        {trainingComparison.leader?.completion ?? 0}% ביצוע
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                      <p className="text-sm font-bold text-blue-700">
+                        ממוצע ביצוע גדודי
+                      </p>
+                      <p className="text-2xl font-black mt-1">
+                        {trainingComparison.averageCompletion}%
+                      </p>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                      <p className="text-sm font-bold text-amber-700">
+                        דורשת תשומת לב
+                      </p>
+                      <p className="text-2xl font-black mt-1">
+                        {trainingComparison.lowest?.company ?? "—"}
+                      </p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        {trainingComparison.lowest?.completion ?? 0}% ביצוע
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto mt-6">
+                    <table className="w-full min-w-[680px] text-right">
+                      <thead className="bg-slate-50 text-slate-600 text-sm">
+                        <tr>
+                          <th className="p-3">פלוגה</th>
+                          <th className="p-3">בוצעו</th>
+                          <th className="p-3">מתוכננים</th>
+                          <th className="p-3">אחוז ביצוע</th>
+                          <th className="p-3">פער מהממוצע</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {companySummary.map(
+                          (item) => {
+                            const delta =
+                              item.completion -
+                              trainingComparison.averageCompletion;
+                            return (
+                              <tr
+                                key={item.company}
+                                className="border-t border-slate-100"
+                              >
+                                <td className="p-3 font-black">{item.company}</td>
+                                <td className="p-3">{item.total}</td>
+                                <td className="p-3">{item.planned}</td>
+                                <td className="p-3 font-black">{item.completion}%</td>
+                                <td className={
+                                  delta > 0
+                                    ? "p-3 font-bold text-green-700"
+                                    : delta < 0
+                                    ? "p-3 font-bold text-red-700"
+                                    : "p-3 font-bold text-slate-500"
+                                }>
+                                  {delta > 0 ? "+" : ""}{delta}%
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {trainingComparison.typeRows.length > 0 && (
+                    <div className="mt-7">
+                      <h3 className="text-lg font-black">
+                        כמה מכל סוג אימון
+                      </h3>
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
+                        {trainingComparison.typeRows.map(
+                          (row) => (
+                            <div
+                              key={row.type}
+                              className="border border-slate-200 rounded-2xl p-4"
+                            >
+                              <p className="font-black">{row.type}</p>
+                              <div className="space-y-2 mt-3">
+                                {row.counts.map(
+                                  (item) => (
+                                    <div
+                                      key={item.company}
+                                      className="flex justify-between gap-3 bg-slate-50 rounded-xl px-3 py-2"
+                                    >
+                                      <span className="font-bold">{item.company}</span>
+                                      <strong>{item.count}</strong>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+              <h2 className="text-xl font-black">
+                סיכום ביצוע לפי פלוגות
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-5">
+                {companySummary.map(
+                  (item) => (
+                    <div
+                      key={
+                        item.company
+                      }
+                      className="border border-slate-200 rounded-2xl p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="font-black text-lg">
+                          {item.company}
+                        </h3>
+                        <span className="bg-blue-50 text-blue-700 rounded-lg px-2 py-1 text-sm font-bold">
+                          {item.completion}%
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm">
+                        בוצעו{" "}
+                        <strong>
+                          {item.total}
+                        </strong>{" "}
+                        מתוך{" "}
+                        <strong>
+                          {item.planned}
+                        </strong>{" "}
+                        אימונים מתוכננים
+                      </p>
+
+                      <div className="mt-3 space-y-1 text-sm text-slate-600">
+                        {item.byType.length >
+                        0 ? (
+                          item.byType.map(
+                            (row) => (
+                              <div
+                                key={
+                                  row.type
+                                }
+                                className="flex justify-between gap-3"
+                              >
+                                <span>
+                                  {row.type}
+                                </span>
+                                <strong>
+                                  {row.count}
+                                </strong>
+                              </div>
+                            )
+                          )
+                        ) : (
+                          <span className="text-slate-400">
+                            טרם סומנו אימונים שבוצעו
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
         {totalWeeks === 0 ? (
 
           <section className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center text-slate-400">
             טרם הוגדר מספר שבועות בקורס
           </section>
 
-        ) : (
+        ) : isViewer ? null : (
 
           <section className="space-y-5">
 
@@ -954,8 +1858,15 @@ export default function TrainingPlanPage() {
                 const completed =
                   weekSessions.filter(
                     (session) =>
-                      session.status ===
-                      "completed"
+                      selectedScope ===
+                      "כלל הגדוד"
+                        ? session.status ===
+                          "completed"
+                        : getCompanyStatus(
+                            session.id,
+                            selectedScope
+                          ) ===
+                          "completed"
                   ).length;
 
                 const completion =
@@ -1054,7 +1965,9 @@ export default function TrainingPlanPage() {
 
                       </div>
 
-                      {!readOnly && (
+                      {!readOnly &&
+                      selectedScope ===
+                        "כלל הגדוד" && (
                         <div className="flex flex-col sm:flex-row gap-2">
 
                           <select
@@ -1141,85 +2054,159 @@ export default function TrainingPlanPage() {
                               key={
                                 session.id
                               }
-                              className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                              className="bg-white border border-slate-200 rounded-2xl p-4"
                             >
+                              {(() => {
+                                const visibleStatus =
+                                  selectedScope ===
+                                  "כלל הגדוד"
+                                    ? session.status
+                                    : getCompanyStatus(
+                                        session.id,
+                                        selectedScope
+                                      );
 
-                              <div>
-
-                                <p className="font-bold text-lg">
-                                  {
-                                    session.trainingType
-                                  }
-                                </p>
-
-                                <p
-                                  className={
-                                    session.status === "completed"
-                                      ? "text-green-700 font-bold text-sm mt-1"
-                                      : session.status === "not_completed"
-                                      ? "text-red-700 font-bold text-sm mt-1"
-                                      : "text-slate-400 text-sm mt-1"
-                                  }
-                                >
-                                  {session.status === "completed"
-                                    ? "✅ בוצע"
-                                    : session.status === "not_completed"
-                                    ? "❌ לא בוצע"
-                                    : "טרם סומן"}
-                                </p>
-
-                              </div>
-
-                              {!readOnly && (
-                                <div className="flex flex-wrap gap-2">
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setStatus(
+                                const updateStatus = (
+                                  status: TrainingStatus
+                                ) =>
+                                  selectedScope ===
+                                  "כלל הגדוד"
+                                    ? setStatus(
                                         session,
-                                        "completed"
+                                        status
                                       )
-                                    }
-                                    className={
-                                      session.status === "completed"
-                                        ? "bg-green-600 text-white rounded-xl px-4 py-2 font-bold"
-                                        : "bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-2 font-bold"
-                                    }
-                                  >
-                                    ✅ בוצע
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setStatus(
+                                    : setCompanyStatus(
                                         session,
-                                        "not_completed"
-                                      )
-                                    }
-                                    className="bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-2 font-bold"
-                                  >
-                                    ❌ לא בוצע
-                                  </button>
+                                        selectedScope,
+                                        status
+                                      );
 
-                                  {session.status !== "completed" && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        deleteTraining(
-                                          session
-                                        )
-                                      }
-                                      className="bg-slate-100 text-slate-600 rounded-xl px-4 py-2 font-bold"
-                                    >
-                                      מחיקה
-                                    </button>
-                                  )}
+                                return (
+                                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-bold text-lg">
+                                          {session.trainingType}
+                                        </p>
 
-                                </div>
-                              )}
+                                        <span
+                                          className={
+                                            visibleStatus ===
+                                            "completed"
+                                              ? "bg-green-100 text-green-800 border border-green-200 rounded-lg px-2.5 py-1 text-xs font-black"
+                                              : visibleStatus ===
+                                                "not_completed"
+                                              ? "bg-red-100 text-red-800 border border-red-200 rounded-lg px-2.5 py-1 text-xs font-black"
+                                              : "bg-slate-100 text-slate-500 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold"
+                                          }
+                                        >
+                                          {visibleStatus ===
+                                          "completed"
+                                            ? "✅ בוצע"
+                                            : visibleStatus ===
+                                              "not_completed"
+                                            ? "❌ לא בוצע"
+                                            : "◯ טרם סומן"}
+                                        </span>
+                                      </div>
 
+                                      {selectedScope !==
+                                        "כלל הגדוד" && (
+                                        <p className="text-xs text-slate-400 mt-1">
+                                          סימון ביצוע עבור{" "}
+                                          <strong>
+                                            {selectedScope}
+                                          </strong>
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    {!readOnly && (
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            updateStatus(
+                                              "completed"
+                                            )
+                                          }
+                                          aria-pressed={
+                                            visibleStatus ===
+                                            "completed"
+                                          }
+                                          className={
+                                            visibleStatus ===
+                                            "completed"
+                                              ? "bg-green-600 border border-green-600 text-white shadow-sm ring-2 ring-green-200 rounded-xl px-4 py-2 font-black transition"
+                                              : "bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-xl px-4 py-2 font-bold transition"
+                                          }
+                                        >
+                                          {visibleStatus ===
+                                          "completed"
+                                            ? "✅ בוצע — מסומן"
+                                            : "✅ בוצע"}
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            updateStatus(
+                                              "not_completed"
+                                            )
+                                          }
+                                          aria-pressed={
+                                            visibleStatus ===
+                                            "not_completed"
+                                          }
+                                          className={
+                                            visibleStatus ===
+                                            "not_completed"
+                                              ? "bg-red-600 border border-red-600 text-white shadow-sm ring-2 ring-red-200 rounded-xl px-4 py-2 font-black transition"
+                                              : "bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 rounded-xl px-4 py-2 font-bold transition"
+                                          }
+                                        >
+                                          {visibleStatus ===
+                                          "not_completed"
+                                            ? "❌ לא בוצע — מסומן"
+                                            : "❌ לא בוצע"}
+                                        </button>
+
+                                        {visibleStatus !==
+                                          "planned" && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              updateStatus(
+                                                "planned"
+                                              )
+                                            }
+                                            className="bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl px-4 py-2 font-bold transition"
+                                          >
+                                            ↩️ איפוס סימון
+                                          </button>
+                                        )}
+
+                                        {selectedScope ===
+                                          "כלל הגדוד" &&
+                                          session.status !==
+                                            "completed" && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                deleteTraining(
+                                                  session
+                                                )
+                                              }
+                                              className="bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl px-4 py-2 font-bold transition"
+                                            >
+                                              מחיקה
+                                            </button>
+                                          )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                           )
@@ -1228,6 +2215,205 @@ export default function TrainingPlanPage() {
                       )}
 
                     </div>
+
+                    {selectedScope !==
+                      "כלל הגדוד" && (
+                      <div className="mt-5 border-t border-slate-200 pt-5">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                          <div>
+                            <h3 className="font-black text-lg">
+                              אימונים נוספים ל{selectedScope}
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                              אימונים שלא מופיעים בתוכנית הגדודית ונוספו לפלוגה בלבד.
+                            </p>
+                          </div>
+
+                          {!readOnly && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <select
+                                value={
+                                  selectedCompanyTraining[
+                                    weekNumber
+                                  ] ??
+                                  TRAINING_TYPES[0]
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  setSelectedCompanyTraining(
+                                    (
+                                      current
+                                    ) => ({
+                                      ...current,
+                                      [weekNumber]:
+                                        event
+                                          .target
+                                          .value,
+                                    })
+                                  )
+                                }
+                                className="border border-slate-300 rounded-xl px-4 py-3 bg-white"
+                              >
+                                {TRAINING_TYPES.map(
+                                  (type) => (
+                                    <option
+                                      key={type}
+                                      value={type}
+                                    >
+                                      {type}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addCompanyOnlyTraining(
+                                    weekNumber
+                                  )
+                                }
+                                className="bg-blue-700 hover:bg-blue-600 text-white rounded-xl px-5 py-3 font-black"
+                              >
+                                + אימון לפלוגה בלבד
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-3 mt-4">
+                          {companyOnlySessions.filter(
+                            (session) =>
+                              session.company ===
+                                selectedScope &&
+                              session.weekNumber ===
+                                weekNumber
+                          ).length === 0 ? (
+                            <div className="border-2 border-dashed border-blue-100 bg-blue-50/40 rounded-2xl p-5 text-center text-slate-400">
+                              אין אימונים נוספים לפלוגה בשבוע זה
+                            </div>
+                          ) : (
+                            companyOnlySessions
+                              .filter(
+                                (session) =>
+                                  session.company ===
+                                    selectedScope &&
+                                  session.weekNumber ===
+                                    weekNumber
+                              )
+                              .map(
+                                (session) => (
+                                  <div
+                                    key={
+                                      `company-${session.id}`
+                                    }
+                                    className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                                  >
+                                    <div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-bold text-lg">
+                                          {session.trainingType}
+                                        </p>
+                                        <span className="bg-blue-100 text-blue-800 rounded-lg px-2 py-1 text-xs font-black">
+                                          פלוגתי בלבד
+                                        </span>
+                                        <span
+                                          className={
+                                            session.status ===
+                                            "completed"
+                                              ? "bg-green-100 text-green-800 rounded-lg px-2 py-1 text-xs font-black"
+                                              : session.status ===
+                                                "not_completed"
+                                              ? "bg-red-100 text-red-800 rounded-lg px-2 py-1 text-xs font-black"
+                                              : "bg-slate-100 text-slate-600 rounded-lg px-2 py-1 text-xs font-bold"
+                                          }
+                                        >
+                                          {session.status ===
+                                          "completed"
+                                            ? "✅ בוצע"
+                                            : session.status ===
+                                              "not_completed"
+                                            ? "❌ לא בוצע"
+                                            : "◯ טרם סומן"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {!readOnly && (
+                                      <div className="flex flex-wrap gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setCompanyOnlyStatus(
+                                              session,
+                                              "completed"
+                                            )
+                                          }
+                                          className={
+                                            session.status ===
+                                            "completed"
+                                              ? "bg-green-600 text-white ring-2 ring-green-200 rounded-xl px-4 py-2 font-black"
+                                              : "bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2 font-bold"
+                                          }
+                                        >
+                                          ✅ בוצע
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setCompanyOnlyStatus(
+                                              session,
+                                              "not_completed"
+                                            )
+                                          }
+                                          className={
+                                            session.status ===
+                                            "not_completed"
+                                              ? "bg-red-600 text-white ring-2 ring-red-200 rounded-xl px-4 py-2 font-black"
+                                              : "bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-2 font-bold"
+                                          }
+                                        >
+                                          ❌ לא בוצע
+                                        </button>
+
+                                        {session.status !==
+                                          "planned" && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setCompanyOnlyStatus(
+                                                session,
+                                                "planned"
+                                              )
+                                            }
+                                            className="bg-white border border-slate-200 text-slate-600 rounded-xl px-4 py-2 font-bold"
+                                          >
+                                            ↩️ איפוס
+                                          </button>
+                                        )}
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            deleteCompanyOnlyTraining(
+                                              session
+                                            )
+                                          }
+                                          className="bg-slate-100 text-slate-600 rounded-xl px-4 py-2 font-bold"
+                                        >
+                                          מחיקה
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              )
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                   </article>
                 );
