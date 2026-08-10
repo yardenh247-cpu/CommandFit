@@ -29,10 +29,13 @@ import NotificationsPanel from "@/components/NotificationsPanel";
    CONFIG
 ========================================================= */
 
-const fighters = [
+const infantryCompletion = [
   "גפן",
-  "רימון",
+];
+
+const fighters = [
   "דקל",
+  "רימון",
   "הדס",
   "דולב",
 ];
@@ -45,6 +48,7 @@ const staff = [
 ];
 
 const allBattalions = [
+  ...infantryCompletion,
   ...fighters,
   ...staff,
 ];
@@ -983,6 +987,20 @@ export default function Home() {
           </section>
         )}
 
+        {/* INFANTRY COMPLETION */}
+
+        <TrackSection
+          title="השלמה חילית חי״ר"
+          subtitle="תמונת מצב גדודית – אחוזים, ממוצעים ומוקדי חולשה"
+          battalions={
+            infantryCompletion
+          }
+          variant="dark"
+          summaries={
+            battalionSummaries
+          }
+        />
+
         {/* FIGHTERS */}
 
         <TrackSection
@@ -1005,7 +1023,7 @@ export default function Home() {
           battalions={
             staff
           }
-          variant="light"
+          variant="staff"
           summaries={
             battalionSummaries
           }
@@ -1041,7 +1059,8 @@ function TrackSection({
 
   variant:
     | "dark"
-    | "light";
+    | "light"
+    | "staff";
 
   summaries:
     Record<
@@ -1059,6 +1078,9 @@ function TrackSection({
             variant ===
             "dark"
               ? "text-xs font-bold text-blue-700 uppercase tracking-wide"
+              : variant ===
+                "staff"
+              ? "text-xs font-bold text-emerald-700 uppercase tracking-wide"
               : "text-xs font-bold text-violet-700 uppercase tracking-wide"
           }
         >
@@ -1128,7 +1150,8 @@ function BattalionCard({
 
   variant:
     | "dark"
-    | "light";
+    | "light"
+    | "staff";
 
   summary?:
     BattalionSummary;
@@ -1136,6 +1159,10 @@ function BattalionCard({
   const dark =
     variant ===
     "dark";
+
+  const staff =
+    variant ===
+    "staff";
 
   return (
     <Link
@@ -1145,6 +1172,8 @@ function BattalionCard({
       className={
         dark
           ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]"
+          : staff
+          ? "group rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-5 text-slate-900 transition hover:bg-emerald-100 hover:border-emerald-300 active:scale-[0.98]"
           : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]"
       }
     >
