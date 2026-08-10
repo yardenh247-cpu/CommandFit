@@ -1,21 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { supabase } from "@/lib/supabase";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
-type NotificationItem = {
+import {
+  supabase,
+} from "@/lib/supabase";
+
+import {
+  useAuth,
+} from "@/lib/use-auth";
+
+type NotificationRow = {
   id: number;
   battalion: string;
-  event_type: string;
-  severity: "info" | "success" | "warning";
+
+  severity:
+    | "info"
+    | "success"
+    | "warning";
+
   title: string;
   message: string;
   href: string;
+
   created_at: string;
   expires_at: string;
 };
+
+function timeAgo(
+  value: string
+) {
+  const diff =
+    Date.now() -
+    new Date(value).getTime();
+
+  const minutes =
+    Math.max(
+      0,
+      Math.floor(
+        diff / 60000
+      )
+    );
+
+  if (minutes < 1) {
+    return "עכשיו";
+  }
+
+  if (minutes < 60) {
+    return `לפני ${minutes} דקות`;
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+  return `לפני ${hours} שעות`;
+}
 
 export default function NotificationsPanel({
   battalion,
@@ -24,43 +71,68 @@ export default function NotificationsPanel({
   battalion?: string;
   compact?: boolean;
 }) {
-  const [notifications, setNotifications] =
-    useState<NotificationItem[]>([]);
+  const {
+    isViewer,
+  } =
+    useAuth();
 
-  const [loading, setLoading] =
+  const [
+    items,
+    setItems,
+  ] =
+    useState<
+      NotificationRow[]
+    >([]);
+
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
-  useEffect(() => {
-    async function loadNotifications() {
-      try {
-        setLoading(true);
+  const load =
+    useCallback(
+      async () => {
+        if (!isViewer) {
+          setItems([]);
+          setLoading(false);
+          return;
+        }
 
-        let query = supabase
-          .from("commandfit_notifications")
-          .select(`
-            id,
-            battalion,
-            event_type,
-            severity,
-            title,
-            message,
-            href,
-            created_at,
-            expires_at
-          `)
-          .gt(
-            "expires_at",
-            new Date().toISOString()
-          )
-          .order(
-            "created_at",
-            {
-              ascending: false,
-            }
-          )
-          .limit(
-            compact ? 5 : 10
-          );
+        let query =
+          supabase
+            .from(
+              "commandfit_notifications"
+            )
+            .select(
+              `
+                id,
+                battalion,
+                severity,
+                title,
+                message,
+                href,
+                created_at,
+                expires_at
+              `
+            )
+            .gt(
+              "expires_at",
+              new Date()
+                .toISOString()
+            )
+            .order(
+              "created_at",
+              {
+                ascending:
+                  false,
+              }
+            )
+            .limit(
+              compact
+                ? 5
+                : 12
+            );
 
         if (battalion) {
           query =
@@ -73,33 +145,47 @@ export default function NotificationsPanel({
         const {
           data,
           error,
-        } = await query;
+        } =
+          await query;
 
         if (error) {
-          throw error;
+          console.error(
+            "Notifications load error:",
+            error
+          );
+
+          setItems([]);
+          setLoading(false);
+          return;
         }
 
-        setNotifications(
-          (data ?? []) as NotificationItem[]
-        );
-      } catch (error) {
-        console.error(
-          "Notifications load error:",
-          error
+        setItems(
+          (
+            data ??
+            []
+          ) as NotificationRow[]
         );
 
-        setNotifications([]);
-      } finally {
         setLoading(false);
-      }
-    }
+      },
+      [
+        battalion,
+        compact,
+        isViewer,
+      ]
+    );
 
-    loadNotifications();
+  useEffect(() => {
+    load();
+
+    if (!isViewer) {
+      return;
+    }
 
     const interval =
       window.setInterval(
-        loadNotifications,
-        60_000
+        load,
+        30000
       );
 
     return () => {
@@ -108,243 +194,117 @@ export default function NotificationsPanel({
       );
     };
   }, [
-    battalion,
-    compact,
+    isViewer,
+    load,
   ]);
 
-  function getStyle(
-    severity:
-      | "info"
-      | "success"
-      | "warning"
-  ) {
-    if (
-      severity ===
-      "warning"
-    ) {
-      return {
-        box:
-          "bg-red-50 border-red-100",
-        badge:
-          "bg-red-100 text-red-700",
-        label:
-          "דורש תשומת לב",
-        icon:
-          "⚠️",
-      };
-    }
-
-    if (
-      severity ===
-      "success"
-    ) {
-      return {
-        box:
-          "bg-green-50 border-green-100",
-        badge:
-          "bg-green-100 text-green-700",
-        label:
-          "עודכן",
-        icon:
-          "✓",
-      };
-    }
-
-    return {
-      box:
-        "bg-blue-50 border-blue-100",
-      badge:
-        "bg-blue-100 text-blue-700",
-      label:
-        "עדכון",
-      icon:
-        "🔔",
-    };
-  }
-
-  function formatTime(
-    value: string
-  ) {
-    try {
-      return new Intl.DateTimeFormat(
-        "he-IL",
-        {
-          hour:
-            "2-digit",
-          minute:
-            "2-digit",
-          day:
-            "2-digit",
-          month:
-            "2-digit",
-        }
-      ).format(
-        new Date(value)
-      );
-    } catch {
-      return "";
-    }
-  }
-
-  if (loading) {
-    return (
-      <section
-        dir="rtl"
-        className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            🔔
-          </div>
-
-          <div>
-            <h2 className="font-bold text-lg">
-              עדכונים
-            </h2>
-
-            <p className="text-sm text-slate-400">
-              טוען עדכונים...
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (
-    notifications.length ===
-    0
-  ) {
-    return (
-      <section
-        dir="rtl"
-        className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            🔔
-          </div>
-
-          <div>
-            <h2 className="font-bold text-lg">
-              עדכונים
-            </h2>
-
-            <p className="text-sm text-slate-500 mt-1">
-              אין עדכונים חדשים ב־24 השעות האחרונות.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
+  if (!isViewer) {
+    return null;
   }
 
   return (
-    <section
-      dir="rtl"
-      className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6"
-    >
-      <div className="flex items-center justify-between gap-4 mb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl">
-              🔔
-            </span>
+    <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-6 mb-6">
 
-            <h2 className="text-xl sm:text-2xl font-black">
-              עדכונים
-            </h2>
-          </div>
+      <div className="flex items-center gap-2">
 
-          <p className="text-sm text-slate-500 mt-1">
-            עדכונים מה־24 שעות האחרונות
-          </p>
-        </div>
+        <h2 className="text-xl sm:text-2xl font-bold">
+          🔔 עדכונים
+        </h2>
 
-        <div className="min-w-10 h-10 px-3 rounded-full bg-slate-900 text-white flex items-center justify-center font-black">
-          {
-            notifications.length
-          }
-        </div>
+        {items.length > 0 && (
+          <span className="min-w-6 h-6 rounded-full bg-red-600 text-white text-xs font-black flex items-center justify-center px-1.5">
+            {items.length}
+          </span>
+        )}
+
       </div>
 
-      <div className="space-y-3">
-        {notifications.map(
-          (
-            notification
-          ) => {
-            const style =
-              getStyle(
-                notification.severity
-              );
+      <p className="text-sm text-slate-500 mt-1">
+        עדכונים ודגשים מה־24 שעות האחרונות
+      </p>
 
-            return (
+      {loading ? (
+
+        <p className="text-sm text-slate-400 mt-5">
+          טוען עדכונים...
+        </p>
+
+      ) : items.length === 0 ? (
+
+        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-400 mt-5">
+          אין עדכונים חדשים
+        </div>
+
+      ) : (
+
+        <div className="space-y-3 mt-5">
+
+          {items.map(
+            (item) => (
+
               <Link
                 key={
-                  notification.id
+                  item.id
                 }
                 href={
-                  notification.href
+                  item.href
                 }
-                className={`block border rounded-2xl p-4 transition hover:shadow-sm ${style.box}`}
+                className={
+                  item.severity ===
+                  "warning"
+                    ? "block border border-red-200 bg-red-50 rounded-2xl p-4 hover:bg-red-100 transition"
+                    : item.severity ===
+                      "success"
+                    ? "block border border-green-100 bg-green-50 rounded-2xl p-4 hover:bg-green-100 transition"
+                    : "block border border-blue-100 bg-blue-50 rounded-2xl p-4 hover:bg-blue-100 transition"
+                }
               >
-                <div className="flex items-start gap-3">
-                  <div className="text-xl leading-none mt-1">
-                    {
-                      style.icon
-                    }
-                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`text-xs font-bold rounded-full px-2.5 py-1 ${style.badge}`}
-                      >
-                        {
-                          style.label
-                        }
-                      </span>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
 
-                      <span className="text-xs text-slate-400">
-                        {
-                          formatTime(
-                            notification.created_at
-                          )
-                        }
-                      </span>
-                    </div>
+                  <div>
 
-                    <h3 className="font-bold text-slate-900 mt-2">
-                      {
-                        notification.title
-                      }
-                    </h3>
+                    <p className="font-bold text-slate-900">
+
+                      {item.severity ===
+                      "warning"
+                        ? "⚠️ "
+                        : item.severity ===
+                          "success"
+                        ? "✅ "
+                        : "🆕 "}
+
+                      {item.title}
+
+                    </p>
 
                     <p className="text-sm text-slate-600 mt-1 leading-6">
-                      {
-                        notification.message
-                      }
+                      {item.message}
                     </p>
 
-                    {!battalion && (
-                      <p className="text-xs font-bold text-slate-500 mt-2">
-                        גדוד{" "}
-                        {
-                          notification.battalion
-                        }
-                      </p>
-                    )}
-
-                    <p className="text-sm font-bold text-blue-700 mt-3">
-                      לצפייה בעדכון ←
-                    </p>
                   </div>
+
+                  <span className="text-xs text-slate-400 shrink-0">
+                    {timeAgo(
+                      item.created_at
+                    )}
+                  </span>
+
                 </div>
+
+                <p className="text-xs font-bold text-blue-700 mt-3">
+                  לפתיחה ←
+                </p>
+
               </Link>
-            );
-          }
-        )}
-      </div>
+
+            )
+          )}
+
+        </div>
+
+      )}
+
     </section>
   );
 }
