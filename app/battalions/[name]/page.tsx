@@ -529,17 +529,6 @@ export default function BattalionPage() {
       ]
     );
 
-  const completionPercent =
-    tests.length >
-    0
-      ? Math.round(
-          (
-            latestResults.length /
-            tests.length
-          ) *
-            100
-        )
-      : 0;
 
   /* =======================================================
      NOT FOUND
@@ -778,37 +767,34 @@ export default function BattalionPage() {
         </section>
 
         {/* =================================================
-            COMPLETION
+            BATTALION PROGRESS
         ================================================= */}
 
         <section className="bg-gradient-to-l from-slate-900 to-slate-800 text-white rounded-3xl p-5 sm:p-7 mb-8 shadow-sm">
 
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div>
 
-            <div>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              תמונת מצב גדודית
+            </h2>
 
-              <h2 className="text-2xl font-bold">
-                תמונת מצב גדודית
-              </h2>
+            <p className="text-slate-300 mt-1">
+              התקדמות בכל בוחן בנפרד לפי מועדים — אחוזי עוברים, נכשלים ומצטיינים.
+            </p>
 
-              <p className="text-slate-300 mt-1">
-                התקדמות הזנת נתוני
-                הבחנים – באחוזים בלבד
-              </p>
+          </div>
 
-            </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
 
-            <div className="bg-white/10 rounded-2xl px-6 py-4 text-center">
-
-              <p className="text-xs text-slate-300">
-                השלמת הזנת בחנים
-              </p>
-
-              <p className="text-3xl font-bold mt-1">
-                {completionPercent}%
-              </p>
-
-            </div>
+            {testCards.map(
+              (item) => (
+                <TestProgressChart
+                  key={item.test.id}
+                  testName={item.test.name}
+                  attempts={item.attempts}
+                />
+              )
+            )}
 
           </div>
 
@@ -1050,6 +1036,405 @@ export default function BattalionPage() {
 /* =========================================================
    COMPONENTS
 ========================================================= */
+
+function TestProgressChart({
+  testName,
+  attempts,
+}: {
+  testName: string;
+  attempts: PercentageResult[];
+}) {
+  const width = 600;
+  const height = 260;
+
+  const padding = {
+    top: 24,
+    right: 24,
+    bottom: 52,
+    left: 48,
+  };
+
+  const plotWidth =
+    width -
+    padding.left -
+    padding.right;
+
+  const plotHeight =
+    height -
+    padding.top -
+    padding.bottom;
+
+  const orderedAttempts =
+    [...attempts].sort(
+      (a, b) =>
+        a.attempt -
+        b.attempt
+    );
+
+  function xForIndex(
+    index: number
+  ) {
+    if (
+      orderedAttempts.length <=
+      1
+    ) {
+      return (
+        padding.left +
+        plotWidth / 2
+      );
+    }
+
+    return (
+      padding.left +
+      (
+        index /
+        (
+          orderedAttempts.length -
+          1
+        )
+      ) *
+        plotWidth
+    );
+  }
+
+  function yForPercent(
+    value: number
+  ) {
+    const safeValue =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          value
+        )
+      );
+
+    return (
+      padding.top +
+      (
+        1 -
+        safeValue /
+          100
+      ) *
+        plotHeight
+    );
+  }
+
+  function pointsFor(
+    key:
+      | "passedPercent"
+      | "failedPercent"
+      | "excellentPercent"
+  ) {
+    return orderedAttempts
+      .map(
+        (
+          item,
+          index
+        ) =>
+          `${xForIndex(
+            index
+          )},${yForPercent(
+            item[key]
+          )}`
+      )
+      .join(" ");
+  }
+
+  const yTicks = [
+    0,
+    25,
+    50,
+    75,
+    100,
+  ];
+
+  return (
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-4 sm:p-5">
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
+        <div>
+          <p className="text-xs text-slate-400">
+            בוחן
+          </p>
+
+          <h3 className="text-xl font-bold mt-1">
+            {testName}
+          </h3>
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-xs">
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-green-400" />
+            עוברים
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-red-400" />
+            נכשלים
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-sky-400" />
+            מצטיינים
+          </span>
+
+        </div>
+
+      </div>
+
+      {orderedAttempts.length === 0 ? (
+
+        <div className="border border-white/10 bg-white/5 rounded-xl p-8 text-center text-slate-400 mt-5">
+          טרם הוזנו נתונים לבוחן זה
+        </div>
+
+      ) : (
+
+        <>
+          <div className="w-full overflow-x-auto mt-5">
+
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="w-full min-w-[520px] h-auto"
+              role="img"
+              aria-label={`גרף התקדמות ${testName}`}
+            >
+
+              {yTicks.map(
+                (tick) => {
+                  const y =
+                    yForPercent(
+                      tick
+                    );
+
+                  return (
+                    <g
+                      key={
+                        tick
+                      }
+                    >
+                      <line
+                        x1={
+                          padding.left
+                        }
+                        x2={
+                          width -
+                          padding.right
+                        }
+                        y1={y}
+                        y2={y}
+                        stroke="rgba(255,255,255,0.12)"
+                        strokeWidth="1"
+                      />
+
+                      <text
+                        x={
+                          padding.left -
+                          10
+                        }
+                        y={
+                          y + 4
+                        }
+                        textAnchor="end"
+                        fontSize="12"
+                        fill="rgba(226,232,240,0.8)"
+                      >
+                        {tick}%
+                      </text>
+                    </g>
+                  );
+                }
+              )}
+
+              <line
+                x1={padding.left}
+                x2={padding.left}
+                y1={padding.top}
+                y2={
+                  height -
+                  padding.bottom
+                }
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="1"
+              />
+
+              <line
+                x1={padding.left}
+                x2={
+                  width -
+                  padding.right
+                }
+                y1={
+                  height -
+                  padding.bottom
+                }
+                y2={
+                  height -
+                  padding.bottom
+                }
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="1"
+              />
+
+              {orderedAttempts.length >
+                1 && (
+                <>
+                  <polyline
+                    points={pointsFor(
+                      "passedPercent"
+                    )}
+                    fill="none"
+                    stroke="#4ade80"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <polyline
+                    points={pointsFor(
+                      "failedPercent"
+                    )}
+                    fill="none"
+                    stroke="#f87171"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <polyline
+                    points={pointsFor(
+                      "excellentPercent"
+                    )}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </>
+              )}
+
+              {orderedAttempts.map(
+                (
+                  item,
+                  index
+                ) => {
+                  const x =
+                    xForIndex(
+                      index
+                    );
+
+                  return (
+                    <g
+                      key={
+                        item.attempt
+                      }
+                    >
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.passedPercent
+                        )}
+                        r="6"
+                        fill="#4ade80"
+                      />
+
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.failedPercent
+                        )}
+                        r="6"
+                        fill="#f87171"
+                      />
+
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.excellentPercent
+                        )}
+                        r="6"
+                        fill="#38bdf8"
+                      />
+
+                      <text
+                        x={x}
+                        y={
+                          height -
+                          20
+                        }
+                        textAnchor="middle"
+                        fontSize="12"
+                        fill="rgba(226,232,240,0.9)"
+                      >
+                        {attemptLabel(
+                          item.attempt
+                        )}
+                      </text>
+                    </g>
+                  );
+                }
+              )}
+
+            </svg>
+
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+
+            <div className="bg-green-400/10 border border-green-400/20 rounded-xl p-3">
+              <p className="text-xs text-green-200">
+                עוברים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-green-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].passedPercent
+                )}
+              </p>
+            </div>
+
+            <div className="bg-red-400/10 border border-red-400/20 rounded-xl p-3">
+              <p className="text-xs text-red-200">
+                נכשלים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-red-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].failedPercent
+                )}
+              </p>
+            </div>
+
+            <div className="bg-sky-400/10 border border-sky-400/20 rounded-xl p-3">
+              <p className="text-xs text-sky-200">
+                מצטיינים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-sky-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].excellentPercent
+                )}
+              </p>
+            </div>
+
+          </div>
+        </>
+
+      )}
+
+    </div>
+  );
+}
 
 function PercentKpi({
   title,
