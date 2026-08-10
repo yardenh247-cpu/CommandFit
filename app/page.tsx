@@ -962,6 +962,47 @@ export default function Home() {
           </p>
 
         </section>
+
+{/* ADMIN TOOLS */}
+
+{isAdmin && (
+  <section className="mb-7">
+
+    <Link
+      href="/admin/tool"
+      className="block bg-gradient-to-l from-violet-700 to-indigo-700 text-white rounded-3xl p-5 sm:p-6 shadow-sm hover:opacity-95 transition"
+    >
+
+      <div className="flex items-center justify-between gap-4">
+
+        <div>
+
+          <p className="text-xs font-bold text-violet-200">
+            כלי ניהול
+          </p>
+
+          <h2 className="text-xl sm:text-2xl font-black mt-1">
+            🧮 מחשבון מצבה ובחנים
+          </h2>
+
+          <p className="text-sm text-violet-100 mt-2">
+            חישוב מצבה, ניגשים, עוברים, נכשלים,
+            מצטיינים ומעבר מצטבר
+          </p>
+
+        </div>
+
+        <span className="text-2xl">
+          ←
+        </span>
+
+      </div>
+
+    </Link>
+
+  </section>
+)}
+
 <NotificationsPanel />
         
         {/* SECURITY */}

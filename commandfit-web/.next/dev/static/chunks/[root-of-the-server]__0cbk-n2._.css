@@ -222,6 +222,7 @@
     --color-indigo-200: #c7d2ff;
     --color-indigo-300: #a4b3ff;
     --color-indigo-500: #625fff;
+    --color-indigo-700: #432dd7;
     --color-indigo-950: #1e1a4d;
     --color-violet-50: #f5f3ff;
     --color-violet-100: #ede9fe;
@@ -334,6 +335,7 @@
       --color-indigo-200: lab(84.4329% 3.18974 -23.9688);
       --color-indigo-300: lab(74.0235% 8.54138 -41.6075);
       --color-indigo-500: lab(48.295% 38.3129 -81.9673);
+      --color-indigo-700: lab(32.4486% 49.2217 -84.6695);
       --color-indigo-950: lab(12.4853% 14.9672 -31.3418);
       --color-violet-50: lab(96.2416% 2.28846 -5.51655);
       --color-violet-100: lab(93.0838% 4.35197 -9.88284);
@@ -1410,6 +1412,16 @@
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
   }
 
+  .from-violet-700 {
+    --tw-gradient-from: var(--color-violet-700);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+
+  .to-indigo-700 {
+    --tw-gradient-to: var(--color-indigo-700);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+
   .to-slate-800 {
     --tw-gradient-to: var(--color-slate-800);
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
@@ -1792,6 +1804,14 @@
     color: var(--color-slate-950);
   }
 
+  .text-violet-100 {
+    color: var(--color-violet-100);
+  }
+
+  .text-violet-200 {
+    color: var(--color-violet-200);
+  }
+
   .text-violet-700 {
     color: var(--color-violet-700);
   }
@@ -1928,6 +1948,10 @@
       .hover\:bg-white\/20:hover {
         background-color: color-mix(in oklab, var(--color-white) 20%, transparent);
       }
+    }
+
+    .hover\:opacity-95:hover {
+      opacity: .95;
     }
   }
 
