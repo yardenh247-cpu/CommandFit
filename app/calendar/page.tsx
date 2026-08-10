@@ -105,6 +105,28 @@ type OverlapInfo = {
     | null;
 };
 
+type WeatherDay = {
+  date: string;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  apparentMax: number;
+  precipitationProbability: number;
+  windMax: number;
+};
+
+type WeatherApiResponse = {
+  daily?: {
+    time?: string[];
+    weather_code?: number[];
+    temperature_2m_max?: number[];
+    temperature_2m_min?: number[];
+    apparent_temperature_max?: number[];
+    precipitation_probability_max?: number[];
+    wind_speed_10m_max?: number[];
+  };
+};
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -466,6 +488,69 @@ function monthTitle(
 }
 
 
+function weatherIcon(
+  code: number
+) {
+  if (code === 0) return "☀️";
+  if ([1, 2].includes(code)) return "🌤️";
+  if (code === 3) return "☁️";
+  if ([45, 48].includes(code)) return "🌫️";
+  if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧️";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
+  if ([95, 96, 99].includes(code)) return "⛈️";
+  return "🌡️";
+}
+
+function weatherLabel(
+  code: number
+) {
+  if (code === 0) return "בהיר";
+  if ([1, 2].includes(code)) return "מעונן חלקית";
+  if (code === 3) return "מעונן";
+  if ([45, 48].includes(code)) return "ערפל";
+  if ([51, 53, 55, 56, 57].includes(code)) return "טפטוף";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "גשם";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "שלג";
+  if ([95, 96, 99].includes(code)) return "סופות רעמים";
+  return "מזג אוויר";
+}
+
+function weatherAlert(
+  weather: WeatherDay
+) {
+  const alerts: string[] = [];
+
+  if (
+    weather.apparentMax >=
+    35
+  ) {
+    alerts.push(
+      "חום גבוה"
+    );
+  }
+
+  if (
+    weather.precipitationProbability >=
+    50
+  ) {
+    alerts.push(
+      "סיכוי לגשם"
+    );
+  }
+
+  if (
+    weather.windMax >=
+    35
+  ) {
+    alerts.push(
+      "רוח חזקה"
+    );
+  }
+
+  return alerts;
+}
+
 function downloadTextFile(
   filename: string,
   content: string,
@@ -590,6 +675,30 @@ export default function CalendarPage() {
   ] =
     useState(
       true
+    );
+
+  const [
+    weatherByDate,
+    setWeatherByDate,
+  ] =
+    useState<
+      Record<string, WeatherDay>
+    >({});
+
+  const [
+    weatherLoading,
+    setWeatherLoading,
+  ] =
+    useState(
+      true
+    );
+
+  const [
+    weatherError,
+    setWeatherError,
+  ] =
+    useState(
+      ""
     );
 
   const [
@@ -743,6 +852,9 @@ export default function CalendarPage() {
 
         return [
           ...names,
+          ...['כש״ג מלא', 'אירוע בה״ד'].filter(
+            (name) => !names.has(name)
+          ),
         ];
       },
       [
@@ -817,6 +929,181 @@ export default function CalendarPage() {
 
   useEffect(() => {
     loadEvents();
+  }, []);
+
+
+  /* =======================================================
+     WEATHER - MITZPE RAMON
+     Open-Meteo, מתעדכן אוטומטית בכניסה ללוח
+  ======================================================= */
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadWeather() {
+      setWeatherLoading(
+        true
+      );
+      setWeatherError(
+        ""
+      );
+
+      try {
+        /*
+          נקודת ייחוס: מצפה רמון.
+          Open-Meteo מאפשר תחזית יומית עד 16 ימים קדימה.
+        */
+        const url =
+          "https://api.open-meteo.com/v1/forecast" +
+          "?latitude=30.61" +
+          "&longitude=34.80" +
+          "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_probability_max,wind_speed_10m_max" +
+          "&timezone=Asia%2FJerusalem" +
+          "&forecast_days=16";
+
+        const response =
+          await fetch(
+            url,
+            {
+              cache:
+                "no-store",
+            }
+          );
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            `Weather HTTP ${response.status}`
+          );
+        }
+
+        const payload =
+          (
+            await response.json()
+          ) as WeatherApiResponse;
+
+        const daily =
+          payload.daily;
+
+        const times =
+          daily?.time ??
+          [];
+
+        const next:
+          Record<
+            string,
+            WeatherDay
+          > = {};
+
+        times.forEach(
+          (
+            date,
+            index
+          ) => {
+            next[date] = {
+              date,
+              weatherCode:
+                Number(
+                  daily
+                    ?.weather_code
+                    ?.[index] ??
+                  0
+                ),
+              tempMax:
+                Number(
+                  daily
+                    ?.temperature_2m_max
+                    ?.[index] ??
+                  0
+                ),
+              tempMin:
+                Number(
+                  daily
+                    ?.temperature_2m_min
+                    ?.[index] ??
+                  0
+                ),
+              apparentMax:
+                Number(
+                  daily
+                    ?.apparent_temperature_max
+                    ?.[index] ??
+                  0
+                ),
+              precipitationProbability:
+                Number(
+                  daily
+                    ?.precipitation_probability_max
+                    ?.[index] ??
+                  0
+                ),
+              windMax:
+                Number(
+                  daily
+                    ?.wind_speed_10m_max
+                    ?.[index] ??
+                  0
+                ),
+            };
+          }
+        );
+
+        if (
+          !cancelled
+        ) {
+          setWeatherByDate(
+            next
+          );
+        }
+      } catch (
+        error
+      ) {
+        console.error(
+          "Weather load error:",
+          error
+        );
+
+        if (
+          !cancelled
+        ) {
+          setWeatherError(
+            "תחזית מזג האוויר אינה זמינה כרגע"
+          );
+          setWeatherByDate(
+            {}
+          );
+        }
+      } finally {
+        if (
+          !cancelled
+        ) {
+          setWeatherLoading(
+            false
+          );
+        }
+      }
+    }
+
+    loadWeather();
+
+    /*
+      רענון אוטומטי כל 30 דקות כל עוד הלוח פתוח.
+    */
+    const interval =
+      window.setInterval(
+        loadWeather,
+        30 * 60 * 1000
+      );
+
+    return () => {
+      cancelled =
+        true;
+      window.clearInterval(
+        interval
+      );
+    };
   }, []);
 
   /* =======================================================
@@ -1353,6 +1640,29 @@ export default function CalendarPage() {
 
           </div>
 
+        </section>
+
+        {/* WEATHER STATUS */}
+
+        <section className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p className="font-black text-sky-900">
+                🌤️ מזג אוויר • מצפה רמון
+              </p>
+              <p className="text-xs sm:text-sm text-sky-800 mt-1">
+                התחזית מתעדכנת אוטומטית ומוצגת בתוך ימי הלוח שבהם קיימת תחזית זמינה.
+              </p>
+            </div>
+
+            <div className="text-xs font-bold text-sky-700">
+              {weatherLoading
+                ? "מעדכן תחזית..."
+                : weatherError
+                ? weatherError
+                : "✓ תחזית מעודכנת"}
+            </div>
+          </div>
         </section>
 
         {/* ADD FORM */}
@@ -1897,6 +2207,18 @@ export default function CalendarPage() {
                     dayEvents
                   );
 
+                const weather =
+                  weatherByDate[
+                    key
+                  ];
+
+                const weatherAlerts =
+                  weather
+                    ? weatherAlert(
+                        weather
+                      )
+                    : [];
+
                 const dayStyle =
   load.level === "critical"
     ? "bg-red-50 border-red-200"
@@ -1976,6 +2298,72 @@ export default function CalendarPage() {
                       )}
 
                     </div>
+
+                    {weather && (
+                      <div
+                        className="mt-1.5 rounded-lg bg-white/80 border border-sky-100 px-1.5 py-1"
+                        title={`${weatherLabel(
+                          weather.weatherCode
+                        )} • ${Math.round(
+                          weather.tempMin
+                        )}°–${Math.round(
+                          weather.tempMax
+                        )}° • גשם ${Math.round(
+                          weather.precipitationProbability
+                        )}% • רוח עד ${Math.round(
+                          weather.windMax
+                        )} קמ״ש`}
+                      >
+                        <div className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]">
+                          <span className="font-black text-sky-900 whitespace-nowrap">
+                            {weatherIcon(
+                              weather.weatherCode
+                            )}{" "}
+                            {Math.round(
+                              weather.tempMax
+                            )}°
+                            <span className="text-slate-400 font-medium">
+                              {" "}
+                              /{" "}
+                              {Math.round(
+                                weather.tempMin
+                              )}°
+                            </span>
+                          </span>
+
+                          <span className="hidden sm:inline text-sky-700 truncate">
+                            {weatherLabel(
+                              weather.weatherCode
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="hidden sm:flex flex-wrap gap-1 mt-1 text-[9px]">
+                          <span className="text-slate-500">
+                            🌧️{" "}
+                            {Math.round(
+                              weather.precipitationProbability
+                            )}%
+                          </span>
+                          <span className="text-slate-500">
+                            💨{" "}
+                            {Math.round(
+                              weather.windMax
+                            )} קמ״ש
+                          </span>
+                        </div>
+
+                        {weatherAlerts.length >
+                          0 && (
+                          <p className="text-[9px] font-black text-amber-700 mt-1 truncate">
+                            ⚠️{" "}
+                            {weatherAlerts.join(
+                              " • "
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {load.windowText && (
                       <p className="hidden sm:block text-[10px] text-slate-500 mt-1">
