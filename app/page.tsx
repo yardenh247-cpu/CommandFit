@@ -23,6 +23,7 @@ import {
 import {
   getBattalionTests,
 } from "@/lib/battalion-tests";
+import NotificationsPanel from "@/components/NotificationsPanel";
 
 /* =========================================================
    CONFIG
@@ -961,7 +962,8 @@ export default function Home() {
           </p>
 
         </section>
-
+<NotificationsPanel />
+        
         {/* SECURITY */}
 
         <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-7">
