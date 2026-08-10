@@ -30,31 +30,56 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 
 type PercentageRow = {
   test_name: string;
-  attempt: number | null;
-  passed_percent: number | null;
-  failed_percent: number | null;
-  excellent_percent: number | null;
+
+  attempt:
+    | number
+    | null;
+
+  passed_percent:
+    | number
+    | null;
+
+  failed_percent:
+    | number
+    | null;
+
+  excellent_percent:
+    | number
+    | null;
 };
 
 type PercentageResult = {
   testName: string;
+
   attempt: number;
+
   passedPercent: number;
+
   failedPercent: number;
+
   excellentPercent: number;
 };
 
 type TestCardData = {
   test: BattalionTest;
-  latest: PercentageResult | null;
-  attempts: PercentageResult[];
+
+  latest:
+    | PercentageResult
+    | null;
+
+  attempts:
+    PercentageResult[];
 };
 
 /* =========================================================
    CONFIG
 ========================================================= */
 
-const battalionTracks: Record<string, string> = {
+const battalionTracks:
+  Record<
+    string,
+    string
+  > = {
   דקל: "מגמת לוחמים",
   רימון: "מגמת לוחמים",
   גפן: "מגמת לוחמים",
@@ -72,7 +97,9 @@ const battalionTracks: Record<string, string> = {
 ========================================================= */
 
 function formatPercent(
-  value: number | null
+  value:
+    | number
+    | null
 ) {
   if (
     value === null ||
@@ -93,18 +120,21 @@ function attemptLabel(
   attempt: number
 ) {
   const labels:
-    Record<number, string> = {
-      1: "מועד א׳",
-      2: "מועד ב׳",
-      3: "מועד ג׳",
-      4: "מועד ד׳",
-      5: "מועד ה׳",
-      6: "מועד ו׳",
-      7: "מועד ז׳",
-      8: "מועד ח׳",
-      9: "מועד ט׳",
-      10: "מועד י׳",
-    };
+    Record<
+      number,
+      string
+    > = {
+    1: "מועד א׳",
+    2: "מועד ב׳",
+    3: "מועד ג׳",
+    4: "מועד ד׳",
+    5: "מועד ה׳",
+    6: "מועד ו׳",
+    7: "מועד ז׳",
+    8: "מועד ח׳",
+    9: "מועד ט׳",
+    10: "מועד י׳",
+  };
 
   return (
     labels[attempt] ??
@@ -113,8 +143,10 @@ function attemptLabel(
 }
 
 function normalizeRow(
-  row: PercentageRow
-): PercentageResult {
+  row:
+    PercentageRow
+):
+  PercentageResult {
   return {
     testName:
       row.test_name,
@@ -179,7 +211,9 @@ export default function BattalionPage() {
     activeCycle,
     setActiveCycle,
   ] =
-    useState<CourseCycle | null>(
+    useState<
+      CourseCycle | null
+    >(
       null
     );
 
@@ -195,13 +229,17 @@ export default function BattalionPage() {
     loading,
     setLoading,
   ] =
-    useState(true);
+    useState(
+      true
+    );
 
   const [
     message,
     setMessage,
   ] =
-    useState("");
+    useState(
+      ""
+    );
 
   const cycleId =
     activeCycle?.id ??
@@ -337,55 +375,70 @@ export default function BattalionPage() {
   const testCards =
     useMemo<
       TestCardData[]
-    >(() => {
-      return tests.map(
-        (test) => {
-          const attempts =
-            rows
-              .filter(
-                (row) =>
-                  row.testName ===
-                  test.name
-              )
-              .sort(
-                (a, b) =>
-                  a.attempt -
-                  b.attempt
-              );
+    >(
+      () => {
+        return tests.map(
+          (
+            test
+          ) => {
+            const attempts =
+              rows
+                .filter(
+                  (
+                    row
+                  ) =>
+                    row.testName ===
+                    test.name
+                )
+                .sort(
+                  (
+                    a,
+                    b
+                  ) =>
+                    a.attempt -
+                    b.attempt
+                );
 
-          return {
-            test,
+            return {
+              test,
 
-            attempts,
+              attempts,
 
-            latest:
-              attempts.length
-                ? attempts[
-                    attempts.length -
-                      1
-                  ]
-                : null,
-          };
-        }
-      );
-    }, [
-      rows,
-      tests,
-    ]);
+              latest:
+                attempts.length >
+                0
+                  ? attempts[
+                      attempts.length -
+                        1
+                    ]
+                  : null,
+            };
+          }
+        );
+      },
+      [
+        rows,
+        tests,
+      ]
+    );
 
   const latestResults =
     useMemo(
       () =>
         testCards
           .map(
-            (item) =>
+            (
+              item
+            ) =>
               item.latest
           )
           .filter(
             (
               item
-            ): item is PercentageResult =>
-              item !== null
+            ):
+              item is PercentageResult =>
+              item !==
+              null
           ),
       [
         testCards,
@@ -393,82 +446,92 @@ export default function BattalionPage() {
     );
 
   const averagePassed =
-    useMemo(() => {
-      if (
-        latestResults.length ===
-        0
-      ) {
-        return null;
-      }
-
-      return (
-        latestResults.reduce(
-          (
-            sum,
-            item
-          ) =>
-            sum +
-            item.passedPercent,
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
           0
-        ) /
-        latestResults.length
-      );
-    }, [
-      latestResults,
-    ]);
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.passedPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
 
   const averageFailed =
-    useMemo(() => {
-      if (
-        latestResults.length ===
-        0
-      ) {
-        return null;
-      }
-
-      return (
-        latestResults.reduce(
-          (
-            sum,
-            item
-          ) =>
-            sum +
-            item.failedPercent,
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
           0
-        ) /
-        latestResults.length
-      );
-    }, [
-      latestResults,
-    ]);
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.failedPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
 
   const averageExcellent =
-    useMemo(() => {
-      if (
-        latestResults.length ===
-        0
-      ) {
-        return null;
-      }
-
-      return (
-        latestResults.reduce(
-          (
-            sum,
-            item
-          ) =>
-            sum +
-            item.excellentPercent,
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
           0
-        ) /
-        latestResults.length
-      );
-    }, [
-      latestResults,
-    ]);
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.excellentPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
 
   const completionPercent =
-    tests.length > 0
+    tests.length >
+    0
       ? Math.round(
           (
             latestResults.length /
@@ -498,7 +561,8 @@ export default function BattalionPage() {
           </h1>
 
           <p className="text-slate-500 mt-2">
-            לא הוגדרה כרגע תכנית בחנים לגדוד{" "}
+            לא הוגדרה כרגע תכנית
+            בחנים לגדוד{" "}
             {battalionName}.
           </p>
 
@@ -508,14 +572,7 @@ export default function BattalionPage() {
           >
             חזרה לדף הבית
           </Link>
-<Link
-  href={`/battalions/${encodeURIComponent(
-    battalionName
-  )}/training-plan`}
-  className="inline-block mt-3 mr-3 bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-bold"
->
-  📅 תוכנית אימונים
-</Link>
+
         </div>
       </main>
     );
@@ -525,7 +582,9 @@ export default function BattalionPage() {
      LOADING
   ======================================================= */
 
-  if (loading) {
+  if (
+    loading
+  ) {
     return (
       <main
         dir="rtl"
@@ -548,7 +607,9 @@ export default function BattalionPage() {
       className="min-h-screen bg-slate-100 text-slate-900"
     >
 
-      {/* HEADER */}
+      {/* ===================================================
+          HEADER
+      =================================================== */}
 
       <header className="bg-slate-900 text-white px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
 
@@ -594,18 +655,23 @@ export default function BattalionPage() {
             </div>
 
             <p className="text-slate-400 text-sm mt-3">
-              CommandFit – תמונת מצב מצרפית באחוזים בלבד
+              CommandFit – תמונת מצב
+              מצרפית באחוזים בלבד
             </p>
 
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
+          {/* =================================================
+              MAIN NAVIGATION
+          ================================================= */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full md:w-auto">
 
             <Link
               href={`/battalions/${encodeURIComponent(
                 battalionName
               )}/cadets`}
-              className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center"
+              className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
               📈 הזנת אחוזים
             </Link>
@@ -614,14 +680,23 @@ export default function BattalionPage() {
               href={`/battalions/${encodeURIComponent(
                 battalionName
               )}/summary`}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
               📊 סיכום באחוזים
             </Link>
 
             <Link
+              href={`/battalions/${encodeURIComponent(
+                battalionName
+              )}/training-plan`}
+              className="bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
+            >
+              📅 תוכנית אימונים
+            </Link>
+
+            <Link
               href="/"
-              className="bg-white/10 hover:bg-white/20 px-5 py-3 rounded-xl text-center"
+              className="bg-white/10 hover:bg-white/20 px-5 py-3 rounded-xl text-center transition"
             >
               חזרה לדף הבית
             </Link>
@@ -634,29 +709,44 @@ export default function BattalionPage() {
 
       <div className="max-w-[1500px] mx-auto p-4 sm:p-6 md:p-8">
 
-        {/* SECURITY */}
+        {/* =================================================
+            SECURITY
+        ================================================= */}
 
-        <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-8">
+        <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6">
 
           <p className="font-bold text-blue-900">
             🔒 נתונים מצרפיים בלבד
           </p>
 
           <p className="text-sm text-blue-800 mt-1 leading-6">
-            במסך זה לא מוצגים שמות, מספרי צוערים, מספר נבחנים או תיק אישי. כל הנתונים מוצגים באחוזים בלבד.
+            במסך זה לא מוצגים שמות,
+            מספרי צוערים, מספר נבחנים
+            או תיק אישי. כל הנתונים
+            מוצגים באחוזים בלבד.
           </p>
 
         </section>
-<NotificationsPanel
-  battalion={battalionName}
-  compact
-/>
-        {/* KPI */}
+
+        {/* =================================================
+            NOTIFICATIONS
+        ================================================= */}
+
+        <NotificationsPanel
+          battalion={
+            battalionName
+          }
+          compact
+        />
+
+        {/* =================================================
+            KPI
+        ================================================= */}
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 
           <PercentKpi
-            title="ממוצע מעבר"
+            title="ממוצע עוברים"
             value={
               formatPercent(
                 averagePassed
@@ -666,7 +756,7 @@ export default function BattalionPage() {
           />
 
           <PercentKpi
-            title="ממוצע כישלון"
+            title="ממוצע נכשלים"
             value={
               formatPercent(
                 averageFailed
@@ -687,7 +777,9 @@ export default function BattalionPage() {
 
         </section>
 
-        {/* COMPLETION */}
+        {/* =================================================
+            COMPLETION
+        ================================================= */}
 
         <section className="bg-gradient-to-l from-slate-900 to-slate-800 text-white rounded-3xl p-5 sm:p-7 mb-8 shadow-sm">
 
@@ -700,7 +792,8 @@ export default function BattalionPage() {
               </h2>
 
               <p className="text-slate-300 mt-1">
-                התקדמות הזנת נתוני הבחנים – באחוזים בלבד
+                התקדמות הזנת נתוני
+                הבחנים – באחוזים בלבד
               </p>
 
             </div>
@@ -721,7 +814,9 @@ export default function BattalionPage() {
 
         </section>
 
-        {/* TESTS */}
+        {/* =================================================
+            TESTS
+        ================================================= */}
 
         <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-6 mb-8">
 
@@ -732,14 +827,17 @@ export default function BattalionPage() {
             </h2>
 
             <p className="text-slate-500 mt-1">
-              בכל בוחן מוצגים אחוז מעבר, כישלון והצטיינות בלבד.
+              בכל בוחן מוצגים אחוז
+              מעבר, כישלון והצטיינות
+              בלבד.
             </p>
 
           </div>
 
           <div
             className={`grid grid-cols-1 md:grid-cols-2 ${
-              tests.length >= 4
+              tests.length >=
+              4
                 ? "xl:grid-cols-4"
                 : "xl:grid-cols-3"
             } gap-4 mt-6`}
@@ -764,11 +862,15 @@ export default function BattalionPage() {
 
                       <p className="text-sm text-slate-500">
                         שלב{" "}
-                        {index + 1}
+                        {index +
+                          1}
                       </p>
 
                       <h3 className="font-bold text-xl mt-1">
-                        {item.test.name}
+                        {
+                          item.test
+                            .name
+                        }
                       </h3>
 
                     </div>
@@ -776,7 +878,9 @@ export default function BattalionPage() {
                     {item.latest && (
                       <span className="bg-slate-100 rounded-lg px-3 py-1 text-xs font-medium">
                         {attemptLabel(
-                          item.latest.attempt
+                          item
+                            .latest
+                            .attempt
                         )}
                       </span>
                     )}
@@ -784,7 +888,10 @@ export default function BattalionPage() {
                   </div>
 
                   <p className="text-sm text-slate-500 mt-3 min-h-[40px]">
-                    {item.test.description}
+                    {
+                      item.test
+                        .description
+                    }
                   </p>
 
                   {item.latest ? (
@@ -794,7 +901,8 @@ export default function BattalionPage() {
                       <MiniPercent
                         title="עברו"
                         value={
-                          item.latest.passedPercent
+                          item.latest
+                            .passedPercent
                         }
                         tone="success"
                       />
@@ -802,7 +910,8 @@ export default function BattalionPage() {
                       <MiniPercent
                         title="נכשלו"
                         value={
-                          item.latest.failedPercent
+                          item.latest
+                            .failedPercent
                         }
                         tone="danger"
                       />
@@ -810,7 +919,8 @@ export default function BattalionPage() {
                       <MiniPercent
                         title="מצטיינים"
                         value={
-                          item.latest.excellentPercent
+                          item.latest
+                            .excellentPercent
                         }
                         tone="excellent"
                       />
@@ -829,7 +939,7 @@ export default function BattalionPage() {
                     href={`/battalions/${encodeURIComponent(
                       battalionName
                     )}/cadets`}
-                    className="block mt-5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-center font-medium"
+                    className="block mt-5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-center font-medium transition"
                   >
                     הזנת / עדכון אחוזים
                   </Link>
@@ -843,9 +953,11 @@ export default function BattalionPage() {
 
         </section>
 
-        {/* QUICK ACTIONS */}
+        {/* =================================================
+            QUICK ACTIONS
+        ================================================= */}
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           <Link
             href={`/battalions/${encodeURIComponent(
@@ -863,7 +975,9 @@ export default function BattalionPage() {
             </h2>
 
             <p className="text-green-800 text-sm mt-2">
-              הזנת אחוז מעבר ואחוז מצטיינים. אחוז הכישלון מחושב אוטומטית.
+              הזנת אחוז מעבר ואחוז
+              מצטיינים. אחוז הכישלון
+              מחושב אוטומטית.
             </p>
 
           </Link>
@@ -884,12 +998,42 @@ export default function BattalionPage() {
             </h2>
 
             <p className="text-blue-800 text-sm mt-2">
-              צפייה בהיסטוריית המועדים ובמגמות הביצוע ללא מידע אישי.
+              צפייה בהיסטוריית
+              המועדים ובמגמות הביצוע
+              ללא מידע אישי.
+            </p>
+
+          </Link>
+
+          <Link
+            href={`/battalions/${encodeURIComponent(
+              battalionName
+            )}/training-plan`}
+            className="bg-violet-50 border border-violet-100 rounded-3xl p-6 hover:bg-violet-100 transition"
+          >
+
+            <p className="text-sm text-violet-700 font-bold">
+              תכנון
+            </p>
+
+            <h2 className="text-2xl font-bold text-violet-900 mt-1">
+              📅 תוכנית אימונים
+            </h2>
+
+            <p className="text-violet-800 text-sm mt-2">
+              תכנון האימונים לפי
+              שבועות, מעקב ביצוע
+              והתראות על עומס אימונים
+              נמוך.
             </p>
 
           </Link>
 
         </section>
+
+        {/* =================================================
+            MESSAGE
+        ================================================= */}
 
         {message && (
           <section className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 mt-8">
@@ -913,7 +1057,9 @@ function PercentKpi({
   tone,
 }: {
   title: string;
+
   value: string;
+
   tone:
     | "success"
     | "danger"
@@ -953,7 +1099,9 @@ function MiniPercent({
   tone,
 }: {
   title: string;
+
   value: number;
+
   tone:
     | "success"
     | "danger"
