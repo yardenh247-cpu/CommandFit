@@ -1,0 +1,1221 @@
+(globalThis["TURBOPACK"] || (globalThis["TURBOPACK"] = [])).push([typeof document === "object" ? document.currentScript : undefined,
+"[project]/app/battalions/[name]/cadets/page.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "default",
+    ()=>PercentageResultsPage
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/app-dir/link.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$battalion$2d$tests$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/battalion-tests.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$cycles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/cycles.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/use-auth.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase.ts [app-client] (ecmascript)");
+;
+var _s = __turbopack_context__.k.signature();
+"use client";
+;
+;
+;
+;
+;
+;
+;
+function emptyResult(testName, attempt = 1) {
+    return {
+        testName,
+        attempt,
+        passedPercent: 0,
+        failedPercent: 100,
+        excellentPercent: 0
+    };
+}
+function clampPercent(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return 0;
+    return Math.min(100, Math.max(0, Math.round(n * 10) / 10));
+}
+function formatPercent(value) {
+    return `${Math.round(value * 10) / 10}%`;
+}
+function attemptLabel(attempt) {
+    const labels = {
+        1: "מועד א׳",
+        2: "מועד ב׳",
+        3: "מועד ג׳",
+        4: "מועד ד׳",
+        5: "מועד ה׳"
+    };
+    return labels[attempt] ?? `מועד ${attempt}`;
+}
+function PercentageResultsPage() {
+    _s();
+    const { isViewer } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
+    const params = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useParams"])();
+    const battalionName = decodeURIComponent(params.name);
+    const [activeCycle, setActiveCycle] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const tests = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "PercentageResultsPage.useMemo[tests]": ()=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$battalion$2d$tests$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getBattalionTests"])(battalionName)
+    }["PercentageResultsPage.useMemo[tests]"], [
+        battalionName
+    ]);
+    const [selectedTest, setSelectedTest] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [result, setResult] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [attempts, setAttempts] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [saving, setSaving] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [message, setMessage] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const cycleId = activeCycle?.id ?? `legacy-${battalionName}`;
+    const isReadOnly = isViewer || activeCycle?.status === "closed";
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "PercentageResultsPage.useEffect": ()=>{
+            setActiveCycle((0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$cycles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getActiveCycle"])(battalionName));
+        }
+    }["PercentageResultsPage.useEffect"], [
+        battalionName
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "PercentageResultsPage.useEffect": ()=>{
+            if (!tests.length) {
+                setSelectedTest(null);
+                setResult(null);
+                return;
+            }
+            setSelectedTest({
+                "PercentageResultsPage.useEffect": (current)=>current && tests.some({
+                        "PercentageResultsPage.useEffect": (test)=>test.name === current.name
+                    }["PercentageResultsPage.useEffect"]) ? current : tests[0]
+            }["PercentageResultsPage.useEffect"]);
+        }
+    }["PercentageResultsPage.useEffect"], [
+        tests
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "PercentageResultsPage.useEffect": ()=>{
+            let cancelled = false;
+            async function load() {
+                if (!selectedTest) {
+                    setAttempts([]);
+                    setResult(null);
+                    setLoading(false);
+                    return;
+                }
+                setLoading(true);
+                setMessage("");
+                const { data, error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("percentage_test_results").select("test_name,attempt,passed_percent,failed_percent,excellent_percent").eq("cycle_id", cycleId).eq("battalion", battalionName).eq("test_name", selectedTest.name).order("attempt", {
+                    ascending: true
+                });
+                if (cancelled) return;
+                if (error) {
+                    console.error(error);
+                    setAttempts([]);
+                    setResult(emptyResult(selectedTest.name));
+                    setMessage("לא ניתן היה לטעון את נתוני האחוזים מהענן");
+                    setLoading(false);
+                    return;
+                }
+                const loaded = (data ?? []).map({
+                    "PercentageResultsPage.useEffect.load.loaded": (row)=>({
+                            testName: row.test_name,
+                            attempt: row.attempt ?? 1,
+                            passedPercent: Number(row.passed_percent ?? 0),
+                            failedPercent: Number(row.failed_percent ?? 100),
+                            excellentPercent: Number(row.excellent_percent ?? 0)
+                        })
+                }["PercentageResultsPage.useEffect.load.loaded"]);
+                setAttempts(loaded);
+                setResult(loaded.length ? loaded[loaded.length - 1] : emptyResult(selectedTest.name));
+                setLoading(false);
+            }
+            load();
+            return ({
+                "PercentageResultsPage.useEffect": ()=>{
+                    cancelled = true;
+                }
+            })["PercentageResultsPage.useEffect"];
+        }
+    }["PercentageResultsPage.useEffect"], [
+        battalionName,
+        cycleId,
+        selectedTest
+    ]);
+    const validation = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "PercentageResultsPage.useMemo[validation]": ()=>{
+            if (!result) return {
+                valid: false,
+                text: ""
+            };
+            if (result.passedPercent < 0 || result.passedPercent > 100 || result.failedPercent < 0 || result.failedPercent > 100 || result.excellentPercent < 0 || result.excellentPercent > 100) {
+                return {
+                    valid: false,
+                    text: "כל אחוז חייב להיות בין 0% ל־100%."
+                };
+            }
+            if (Math.abs(result.passedPercent + result.failedPercent - 100) > 0.11) {
+                return {
+                    valid: false,
+                    text: "אחוז העוברים והנכשלים חייב להסתכם ל־100%."
+                };
+            }
+            if (result.excellentPercent > result.passedPercent) {
+                return {
+                    valid: false,
+                    text: "אחוז המצטיינים לא יכול להיות גבוה מאחוז העוברים."
+                };
+            }
+            return {
+                valid: true,
+                text: "הנתונים תקינים ומוכנים לשמירה."
+            };
+        }
+    }["PercentageResultsPage.useMemo[validation]"], [
+        result
+    ]);
+    function updatePassed(value) {
+        if (isReadOnly || !result) return;
+        const passed = clampPercent(value);
+        const failed = Math.round((100 - passed) * 10) / 10;
+        setResult({
+            ...result,
+            passedPercent: passed,
+            failedPercent: failed,
+            excellentPercent: Math.min(result.excellentPercent, passed)
+        });
+        setMessage("");
+    }
+    function updateExcellent(value) {
+        if (isReadOnly || !result) return;
+        setResult({
+            ...result,
+            excellentPercent: clampPercent(value)
+        });
+        setMessage("");
+    }
+    function selectAttempt(attempt) {
+        const existing = attempts.find((item)=>item.attempt === attempt);
+        if (existing) setResult(existing);
+    }
+    function createNextAttempt() {
+        if (isReadOnly || !selectedTest) return;
+        const highest = attempts.reduce((max, item)=>Math.max(max, item.attempt), 0);
+        setResult(emptyResult(selectedTest.name, highest + 1));
+        setMessage("");
+    }
+    async function saveResult() {
+        if (isReadOnly || !result || !selectedTest || !validation.valid) return;
+        setSaving(true);
+        setMessage("שומר לענן...");
+        const { error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("percentage_test_results").upsert({
+            cycle_id: cycleId,
+            battalion: battalionName,
+            test_name: selectedTest.name,
+            attempt: result.attempt,
+            passed_percent: result.passedPercent,
+            failed_percent: result.failedPercent,
+            excellent_percent: result.excellentPercent,
+            updated_at: new Date().toISOString()
+        }, {
+            onConflict: "cycle_id,battalion,test_name,attempt"
+        });
+        if (error) {
+            console.error(error);
+            setMessage(`השמירה נכשלה: ${error.message}`);
+            setSaving(false);
+            return;
+        }
+        setAttempts((current)=>{
+            const rest = current.filter((item)=>item.attempt !== result.attempt);
+            return [
+                ...rest,
+                result
+            ].sort((a, b)=>a.attempt - b.attempt);
+        });
+        setMessage("האחוזים נשמרו בענן בהצלחה");
+        setSaving(false);
+    }
+    if (loading && !result) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
+            dir: "rtl",
+            className: "min-h-screen bg-slate-100 flex items-center justify-center p-4",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "bg-white rounded-2xl p-8 shadow-sm text-slate-700",
+                children: "טוען נתוני ביצוע..."
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 252,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+            lineNumber: 251,
+            columnNumber: 7
+        }, this);
+    }
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
+        dir: "rtl",
+        className: "min-h-screen bg-slate-100 text-slate-900",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
+                className: "bg-slate-900 text-white px-4 sm:px-6 lg:px-8 py-5 sm:py-7",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "max-w-[1500px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-5",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-slate-300 text-sm",
+                                    children: "CommandFit"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                    lineNumber: 264,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                                    className: "text-2xl sm:text-3xl font-bold mt-1",
+                                    children: [
+                                        "תמונת מצב באחוזים – גדוד ",
+                                        battalionName
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                    lineNumber: 265,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-slate-300 mt-2",
+                                    children: "ללא שמות צוערים וללא נתוני כוח אדם מספריים"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                    lineNumber: 268,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                            lineNumber: 263,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                            href: `/battalions/${encodeURIComponent(battalionName)}`,
+                            className: "w-full lg:w-auto bg-white/10 hover:bg-white/20 rounded-xl px-5 py-3 text-center",
+                            children: "חזרה לגדוד"
+                        }, void 0, false, {
+                            fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                            lineNumber: 273,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                    lineNumber: 262,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 261,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "max-w-[1500px] mx-auto p-4 sm:p-6 lg:p-8",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                        className: "bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "font-bold text-blue-900",
+                                children: "🔒 תצוגה מצרפית בלבד"
+                            }, void 0, false, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 284,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "text-sm text-blue-800 mt-1 leading-6",
+                                children: "נשמרים אחוזי ביצוע בלבד. אין אפשרות להזין שמות, מספרי צוערים או מספר נבחנים."
+                            }, void 0, false, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 285,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                        lineNumber: 283,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                        className: "bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex flex-col lg:flex-row lg:items-end justify-between gap-4",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex-1",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                className: "block text-sm font-bold text-slate-900 mb-2",
+                                                children: "בוחן"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 293,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                value: selectedTest?.name ?? "",
+                                                onChange: (event)=>{
+                                                    const next = tests.find((test)=>test.name === event.target.value);
+                                                    setSelectedTest(next ?? null);
+                                                },
+                                                className: "w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900",
+                                                children: tests.map((test)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                        value: test.name,
+                                                        children: test.name
+                                                    }, test.id, false, {
+                                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                        lineNumber: 303,
+                                                        columnNumber: 19
+                                                    }, this))
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 294,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 292,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        type: "button",
+                                        disabled: isReadOnly,
+                                        onClick: createNextAttempt,
+                                        className: "bg-blue-50 text-blue-700 border border-blue-100 rounded-xl px-5 py-3 font-bold disabled:opacity-50",
+                                        children: "+ מועד נוסף"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 310,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 291,
+                                columnNumber: 11
+                            }, this),
+                            !!attempts.length && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex flex-wrap gap-2 mt-5",
+                                children: attempts.map((item)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        type: "button",
+                                        onClick: ()=>selectAttempt(item.attempt),
+                                        className: result?.attempt === item.attempt ? "bg-slate-900 text-white rounded-xl px-4 py-2 font-bold" : "bg-slate-100 text-slate-700 rounded-xl px-4 py-2",
+                                        children: attemptLabel(item.attempt)
+                                    }, item.attempt, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 323,
+                                        columnNumber: 17
+                                    }, this))
+                            }, void 0, false, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 321,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                        lineNumber: 290,
+                        columnNumber: 9
+                    }, this),
+                    result && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                                className: "bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "text-sm text-slate-500",
+                                        children: "מועד נבחר"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 343,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                        className: "text-2xl font-bold mt-1",
+                                        children: [
+                                            selectedTest?.name,
+                                            " • ",
+                                            attemptLabel(result.attempt)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 344,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 342,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                                className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PercentInput, {
+                                        title: "אחוז עברו",
+                                        value: result.passedPercent,
+                                        disabled: isReadOnly,
+                                        onChange: updatePassed,
+                                        helper: "אחוז הנכשלים יחושב אוטומטית."
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 350,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadOnlyPercent, {
+                                        title: "אחוז נכשלו",
+                                        value: result.failedPercent,
+                                        helper: "מחושב אוטומטית כ־100% פחות אחוז העוברים."
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 358,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PercentInput, {
+                                        title: "אחוז מצטיינים",
+                                        value: result.excellentPercent,
+                                        disabled: isReadOnly,
+                                        onChange: updateExcellent,
+                                        helper: "המצטיינים הם חלק מהעוברים."
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 364,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 349,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                                className: "bg-white rounded-3xl shadow-sm p-5 sm:p-7 mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                        className: "text-xl sm:text-2xl font-bold",
+                                        children: "תמונת מצב"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 374,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SummaryCard, {
+                                                title: "עברו",
+                                                value: result.passedPercent,
+                                                tone: "success"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 377,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SummaryCard, {
+                                                title: "נכשלו",
+                                                value: result.failedPercent,
+                                                tone: "danger"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 378,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SummaryCard, {
+                                                title: "מצטיינים",
+                                                value: result.excellentPercent,
+                                                tone: "excellent"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 379,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 376,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 373,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                                className: "bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: validation.valid ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-4" : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4",
+                                        children: validation.text
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 384,
+                                        columnNumber: 15
+                                    }, this),
+                                    message && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "bg-blue-50 border border-blue-100 text-blue-700 rounded-xl p-4 mt-4",
+                                        children: message
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 395,
+                                        columnNumber: 17
+                                    }, this),
+                                    !isReadOnly && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        type: "button",
+                                        disabled: saving || !validation.valid,
+                                        onClick: saveResult,
+                                        className: "w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 py-3 font-bold mt-5 disabled:opacity-40",
+                                        children: saving ? "שומר..." : "שמירת האחוזים"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                        lineNumber: 401,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                lineNumber: 383,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                        lineNumber: 341,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 282,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+        lineNumber: 260,
+        columnNumber: 5
+    }, this);
+}
+_s(PercentageResultsPage, "omsyNQMRV+RGnirInrcP8NG/3MI=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useParams"]
+    ];
+});
+_c = PercentageResultsPage;
+function PercentInput({ title, value, disabled, onChange, helper }) {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "bg-white rounded-2xl shadow-sm p-5",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                className: "block text-sm font-bold text-slate-900 mb-3",
+                children: title
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 433,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "relative",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                        disabled: disabled,
+                        type: "number",
+                        min: 0,
+                        max: 100,
+                        step: 0.1,
+                        value: value,
+                        onChange: (event)=>onChange(event.target.value),
+                        className: "w-full border border-slate-300 rounded-xl pr-4 pl-12 py-3 text-2xl font-bold text-slate-900 bg-white disabled:bg-slate-50"
+                    }, void 0, false, {
+                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                        lineNumber: 435,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                        className: "absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold",
+                        children: "%"
+                    }, void 0, false, {
+                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                        lineNumber: 445,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 434,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-xs text-slate-500 mt-3",
+                children: helper
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 447,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+        lineNumber: 432,
+        columnNumber: 5
+    }, this);
+}
+_c1 = PercentInput;
+function ReadOnlyPercent({ title, value, helper }) {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "bg-slate-50 border border-slate-200 rounded-2xl p-5",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-sm font-bold text-slate-900 mb-3",
+                children: title
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 463,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-3xl font-bold text-slate-900",
+                children: formatPercent(value)
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 464,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-xs text-slate-500 mt-3",
+                children: helper
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 465,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+        lineNumber: 462,
+        columnNumber: 5
+    }, this);
+}
+_c2 = ReadOnlyPercent;
+function SummaryCard({ title, value, tone }) {
+    const styles = {
+        success: "bg-green-50 border-green-100 text-green-700",
+        danger: "bg-red-50 border-red-100 text-red-700",
+        excellent: "bg-sky-50 border-sky-200 text-sky-700"
+    };
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: `border rounded-2xl p-5 ${styles[tone]}`,
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-sm font-bold",
+                children: title
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 487,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-4xl font-bold mt-2",
+                children: formatPercent(value)
+            }, void 0, false, {
+                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                lineNumber: 488,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+        lineNumber: 486,
+        columnNumber: 5
+    }, this);
+}
+_c3 = SummaryCard;
+var _c, _c1, _c2, _c3;
+__turbopack_context__.k.register(_c, "PercentageResultsPage");
+__turbopack_context__.k.register(_c1, "PercentInput");
+__turbopack_context__.k.register(_c2, "ReadOnlyPercent");
+__turbopack_context__.k.register(_c3, "SummaryCard");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/lib/battalion-tests.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/* =========================================================
+   COMMAND FIT
+   הגדרת הבחנים לפי גדוד
+========================================================= */ __turbopack_context__.s([
+    "BATTALION_TESTS",
+    ()=>BATTALION_TESTS,
+    "getBattalionTests",
+    ()=>getBattalionTests,
+    "getTestOrder",
+    ()=>getTestOrder,
+    "getTestType",
+    ()=>getTestType,
+    "isTestAllowedForBattalion",
+    ()=>isTestAllowedForBattalion
+]);
+/* =========================================================
+   דקל
+   כש"ג פתיחה → לורן רגיל → כש"ג סוף → לורן משופר
+========================================================= */ const DEKEL_TESTS = [
+    {
+        id: "fitness-opening",
+        name: 'כש"ג פתיחה',
+        type: "fitness",
+        order: 1,
+        description: "בוחן הכשירות הגופנית בתחילת התקופה"
+    },
+    {
+        id: "loran-regular",
+        name: "לורן",
+        type: "loran",
+        order: 2,
+        description: "בוחן לורן רגיל לפי אוכלוסיית הלורן והמערך האישי"
+    },
+    {
+        id: "fitness-final",
+        name: 'כש"ג סוף',
+        type: "fitness",
+        order: 3,
+        description: "בוחן הכשירות הגופנית בסיום התקופה"
+    },
+    {
+        id: "loran-improved",
+        name: "לורן משופר",
+        type: "improved-loran",
+        order: 4,
+        description: "בוחן לורן משופר"
+    }
+];
+/* =========================================================
+   רימון
+   כש"ג פתיחה → לורן רגיל → כש"ג סוף → לורן משופר
+========================================================= */ const RIMON_TESTS = [
+    {
+        id: "fitness-opening",
+        name: 'כש"ג פתיחה',
+        type: "fitness",
+        order: 1,
+        description: "בוחן הכשירות הגופנית בתחילת התקופה"
+    },
+    {
+        id: "loran-regular",
+        name: "לורן",
+        type: "loran",
+        order: 2,
+        description: "בוחן לורן רגיל לפי אוכלוסיית הלורן והמערך האישי"
+    },
+    {
+        id: "fitness-final",
+        name: 'כש"ג סוף',
+        type: "fitness",
+        order: 3,
+        description: "בוחן הכשירות הגופנית בסיום התקופה"
+    },
+    {
+        id: "loran-improved",
+        name: "לורן משופר",
+        type: "improved-loran",
+        order: 4,
+        description: "בוחן לורן משופר"
+    }
+];
+/* =========================================================
+   גפן
+   לורן משופר → כש"ג סוף → בוחן מ"מ
+
+   אין:
+   - כש"ג פתיחה
+   - לורן רגיל
+========================================================= */ const GEFEN_TESTS = [
+    {
+        id: "loran-improved",
+        name: "לורן משופר",
+        type: "improved-loran",
+        order: 1,
+        description: "בוחן לורן משופר"
+    },
+    {
+        id: "fitness-final",
+        name: 'כש"ג סוף',
+        type: "fitness",
+        order: 2,
+        description: "בוחן הכשירות הגופנית בסיום תקופת גפן"
+    },
+    {
+        id: "mm-test",
+        name: 'בוחן מ"מ',
+        type: "mm",
+        order: 3,
+        description: 'בוחן מ"מ – מתקיים בגדוד גפן בלבד'
+    }
+];
+const BATTALION_TESTS = {
+    דקל: DEKEL_TESTS,
+    רימון: RIMON_TESTS,
+    גפן: GEFEN_TESTS
+};
+function getBattalionTests(battalionName) {
+    return (BATTALION_TESTS[battalionName] ?? []).slice().sort((a, b)=>a.order - b.order);
+}
+function isTestAllowedForBattalion(battalionName, testName) {
+    return getBattalionTests(battalionName).some((test)=>test.name === testName);
+}
+function getTestType(battalionName, testName) {
+    const test = getBattalionTests(battalionName).find((item)=>item.name === testName);
+    return test?.type ?? null;
+}
+function getTestOrder(battalionName, testName) {
+    const test = getBattalionTests(battalionName).find((item)=>item.name === testName);
+    return test?.order ?? null;
+}
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/lib/cycles.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/* =========================================================
+   COMMAND FIT
+   ניהול מחזורים
+========================================================= */ __turbopack_context__.s([
+    "closeCycle",
+    ()=>closeCycle,
+    "createCycle",
+    ()=>createCycle,
+    "deleteCycle",
+    ()=>deleteCycle,
+    "getActiveCycle",
+    ()=>getActiveCycle,
+    "getActiveCycleId",
+    ()=>getActiveCycleId,
+    "getAllCycles",
+    ()=>getAllCycles,
+    "getCadetsStorageKey",
+    ()=>getCadetsStorageKey,
+    "getCycleById",
+    ()=>getCycleById,
+    "getCycleStatusLabel",
+    ()=>getCycleStatusLabel,
+    "getCyclesByBattalion",
+    ()=>getCyclesByBattalion,
+    "getLegacyCadetsStorageKey",
+    ()=>getLegacyCadetsStorageKey,
+    "getLegacyResultsStorageKey",
+    ()=>getLegacyResultsStorageKey,
+    "getResultsStorageKey",
+    ()=>getResultsStorageKey,
+    "hasLegacyData",
+    ()=>hasLegacyData,
+    "migrateLegacyDataToCycle",
+    ()=>migrateLegacyDataToCycle,
+    "reopenCycle",
+    ()=>reopenCycle,
+    "setActiveCycle",
+    ()=>setActiveCycle
+]);
+/* =========================================================
+   STORAGE KEYS
+========================================================= */ const CYCLES_STORAGE_KEY = "commandfit-cycles";
+const ACTIVE_CYCLE_PREFIX = "commandfit-active-cycle";
+/* =========================================================
+   HELPERS
+========================================================= */ function safeParse(value, fallback) {
+    if (!value) {
+        return fallback;
+    }
+    try {
+        return JSON.parse(value);
+    } catch  {
+        return fallback;
+    }
+}
+function sortCycles(cycles) {
+    return cycles.slice().sort((a, b)=>new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+function getAllCycles() {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    const saved = localStorage.getItem(CYCLES_STORAGE_KEY);
+    return sortCycles(safeParse(saved, []));
+}
+/* =========================================================
+   SAVE ALL CYCLES
+========================================================= */ function saveAllCycles(cycles) {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    localStorage.setItem(CYCLES_STORAGE_KEY, JSON.stringify(cycles));
+}
+function getCyclesByBattalion(battalion) {
+    return getAllCycles().filter((cycle)=>cycle.battalion === battalion);
+}
+function getCycleById(cycleId) {
+    return getAllCycles().find((cycle)=>cycle.id === cycleId) ?? null;
+}
+function getActiveCycleId(battalion) {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    return localStorage.getItem(`${ACTIVE_CYCLE_PREFIX}-${battalion}`);
+}
+function getActiveCycle(battalion) {
+    const cycleId = getActiveCycleId(battalion);
+    if (!cycleId) {
+        return null;
+    }
+    const cycle = getCycleById(cycleId);
+    if (!cycle || cycle.battalion !== battalion) {
+        return null;
+    }
+    return cycle;
+}
+function setActiveCycle(battalion, cycleId) {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    const cycle = getCycleById(cycleId);
+    if (!cycle || cycle.battalion !== battalion) {
+        return;
+    }
+    localStorage.setItem(`${ACTIVE_CYCLE_PREFIX}-${battalion}`, cycleId);
+}
+function createCycle({ name, battalion, startDate, sourceCycles }) {
+    const now = new Date().toISOString();
+    const cycle = {
+        id: `cycle-${battalion}-${Date.now()}`,
+        name: name.trim(),
+        battalion,
+        status: "active",
+        startDate,
+        sourceCycles,
+        createdAt: now
+    };
+    const cycles = getAllCycles();
+    /*
+    רק מחזור פעיל אחד לכל גדוד
+  */ const updated = cycles.map((item)=>{
+        if (item.battalion === battalion && item.status === "active") {
+            return {
+                ...item,
+                status: "closed",
+                closedAt: now
+            };
+        }
+        return item;
+    });
+    updated.push(cycle);
+    saveAllCycles(updated);
+    setActiveCycle(battalion, cycle.id);
+    return cycle;
+}
+function closeCycle(cycleId, endDate) {
+    const cycles = getAllCycles();
+    const current = cycles.find((cycle)=>cycle.id === cycleId);
+    if (!current) {
+        return null;
+    }
+    const closedAt = new Date().toISOString();
+    const updatedCycle = {
+        ...current,
+        status: "closed",
+        endDate: endDate || current.endDate,
+        closedAt
+    };
+    saveAllCycles(cycles.map((cycle)=>cycle.id === cycleId ? updatedCycle : cycle));
+    const activeId = getActiveCycleId(current.battalion);
+    if (activeId === cycleId && ("TURBOPACK compile-time value", "object") !== "undefined") {
+        localStorage.removeItem(`${ACTIVE_CYCLE_PREFIX}-${current.battalion}`);
+    }
+    return updatedCycle;
+}
+function reopenCycle(cycleId) {
+    const cycles = getAllCycles();
+    const current = cycles.find((cycle)=>cycle.id === cycleId);
+    if (!current) {
+        return null;
+    }
+    /*
+    סוגרים כל מחזור פעיל אחר
+    של אותו גדוד
+  */ const updated = cycles.map((cycle)=>{
+        if (cycle.battalion === current.battalion && cycle.id !== cycleId && cycle.status === "active") {
+            return {
+                ...cycle,
+                status: "closed",
+                closedAt: new Date().toISOString()
+            };
+        }
+        if (cycle.id === cycleId) {
+            return {
+                ...cycle,
+                status: "active",
+                closedAt: undefined,
+                endDate: undefined
+            };
+        }
+        return cycle;
+    });
+    saveAllCycles(updated);
+    setActiveCycle(current.battalion, cycleId);
+    return updated.find((cycle)=>cycle.id === cycleId) ?? null;
+}
+function deleteCycle(cycleId) {
+    const cycles = getAllCycles();
+    const cycle = cycles.find((item)=>item.id === cycleId);
+    if (!cycle) {
+        return false;
+    }
+    const updated = cycles.filter((item)=>item.id !== cycleId);
+    saveAllCycles(updated);
+    const activeId = getActiveCycleId(cycle.battalion);
+    if (activeId === cycleId && ("TURBOPACK compile-time value", "object") !== "undefined") {
+        localStorage.removeItem(`${ACTIVE_CYCLE_PREFIX}-${cycle.battalion}`);
+    }
+    return true;
+}
+function getCadetsStorageKey(battalion, cycleId) {
+    return `commandfit-cadets-${battalion}-${cycleId}`;
+}
+function getResultsStorageKey(battalion, cycleId, testName) {
+    return `commandfit-results-${battalion}-${cycleId}-${testName}`;
+}
+function getLegacyCadetsStorageKey(battalion) {
+    return `commandfit-cadets-${battalion}`;
+}
+function getLegacyResultsStorageKey(battalion, testName) {
+    return `commandfit-results-${battalion}-${testName}`;
+}
+function migrateLegacyDataToCycle(battalion, cycleId, testNames) {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    /*
+    צוערים
+  */ const legacyCadetsKey = getLegacyCadetsStorageKey(battalion);
+    const newCadetsKey = getCadetsStorageKey(battalion, cycleId);
+    const existingNewCadets = localStorage.getItem(newCadetsKey);
+    if (!existingNewCadets) {
+        const legacyCadets = localStorage.getItem(legacyCadetsKey);
+        if (legacyCadets) {
+            localStorage.setItem(newCadetsKey, legacyCadets);
+        }
+    }
+    /*
+    תוצאות
+  */ testNames.forEach((testName)=>{
+        const legacyKey = getLegacyResultsStorageKey(battalion, testName);
+        const newKey = getResultsStorageKey(battalion, cycleId, testName);
+        const existingNew = localStorage.getItem(newKey);
+        if (existingNew) {
+            return;
+        }
+        const legacy = localStorage.getItem(legacyKey);
+        if (legacy) {
+            localStorage.setItem(newKey, legacy);
+        }
+    });
+}
+function hasLegacyData(battalion, testNames) {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    const cadets = localStorage.getItem(getLegacyCadetsStorageKey(battalion));
+    if (cadets) {
+        return true;
+    }
+    return testNames.some((testName)=>Boolean(localStorage.getItem(getLegacyResultsStorageKey(battalion, testName))));
+}
+function getCycleStatusLabel(status) {
+    if (status === "active") {
+        return "פעיל";
+    }
+    return "סגור";
+}
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/lib/supabase.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "supabase",
+    ()=>supabase
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/@supabase/supabase-js/dist/index.mjs [app-client] (ecmascript) <locals>");
+;
+const supabaseUrl = ("TURBOPACK compile-time value", "https://lfgjayktpcyqylpbwtmk.supabase.co");
+const supabaseAnonKey = ("TURBOPACK compile-time value", "sb_publishable_-KFdTO7gcOGS7LnclXOKrQ_ipuUNrX_");
+if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+;
+const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createClient"])(supabaseUrl, supabaseAnonKey);
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+"[project]/lib/use-auth.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "useAuth",
+    ()=>useAuth
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var _s = __turbopack_context__.k.signature();
+"use client";
+;
+function useAuth() {
+    _s();
+    const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "useAuth.useEffect": ()=>{
+            async function loadUser() {
+                try {
+                    const response = await fetch("/api/auth/me", {
+                        cache: "no-store"
+                    });
+                    if (!response.ok) {
+                        setUser(null);
+                        return;
+                    }
+                    const data = await response.json();
+                    setUser(data.user ?? null);
+                } catch  {
+                    setUser(null);
+                } finally{
+                    setLoading(false);
+                }
+            }
+            loadUser();
+        }
+    }["useAuth.useEffect"], []);
+    return {
+        user,
+        loading,
+        isAdmin: user?.role === "admin",
+        isViewer: user?.role === "viewer"
+    };
+}
+_s(useAuth, "9HrRzss74U5IEws4gTlgxjUJS7M=");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+]);
+
+//# sourceMappingURL=_1fy5tls._.js.map
