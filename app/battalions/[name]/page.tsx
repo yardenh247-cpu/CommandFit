@@ -28,6 +28,13 @@ import NotificationsPanel from "@/components/NotificationsPanel";
    TYPES
 ========================================================= */
 
+type MetricValue = {
+  average?: string;
+  failedPercent: number;
+};
+
+type MetricsMap = Record<string, MetricValue>;
+
 type PercentageRow = {
   test_name: string;
 
@@ -46,6 +53,10 @@ type PercentageRow = {
   excellent_percent:
     | number
     | null;
+
+  metrics:
+    | MetricsMap
+    | null;
 };
 
 type PercentageResult = {
@@ -58,6 +69,8 @@ type PercentageResult = {
   failedPercent: number;
 
   excellentPercent: number;
+
+  metrics: MetricsMap;
 };
 
 type TestCardData = {
@@ -153,6 +166,34 @@ function attemptLabel(
   );
 }
 
+function getMetricLabel(
+  key: string
+) {
+  const labels: Record<string, string> = {
+    run: "ריצה",
+    facilities: "מתקנים",
+    ylm: 'יל"מ',
+    sprints: "ספרינטים",
+    pullups: "מתח",
+    push: "לחיצת חזה / מקבילים",
+    floorLift: "הרמה מהרצפה",
+    pushups: "שכיבות סמיכה",
+  };
+
+  return labels[key] ?? key;
+}
+
+function signedPoints(
+  value: number
+) {
+  const rounded =
+    Math.round(value * 10) / 10;
+
+  return rounded > 0
+    ? `+${rounded}`
+    : `${rounded}`;
+}
+
 function normalizeRow(
   row:
     PercentageRow
@@ -183,6 +224,9 @@ function normalizeRow(
         row.excellent_percent ??
         0
       ),
+
+    metrics:
+      row.metrics ?? {},
   };
 }
 
@@ -316,7 +360,8 @@ export default function BattalionPage() {
               attempt,
               passed_percent,
               failed_percent,
-              excellent_percent
+              excellent_percent,
+              metrics
             `
           )
           .eq(
@@ -556,6 +601,104 @@ export default function BattalionPage() {
     );
 
 
+  const battalionIntelligence =
+    useMemo(() => {
+      const trends = testCards
+        .filter(
+          (item) =>
+            item.attempts.length >= 2
+        )
+        .map((item) => {
+          const ordered =
+            [...item.attempts].sort(
+              (a, b) =>
+                a.attempt -
+                b.attempt
+            );
+
+          const first =
+            ordered[0];
+
+          const latest =
+            ordered[
+              ordered.length - 1
+            ];
+
+          return {
+            testName:
+              item.test.name,
+
+            firstAttempt:
+              first.attempt,
+
+            latestAttempt:
+              latest.attempt,
+
+            passedChange:
+              latest.passedPercent -
+              first.passedPercent,
+
+            failedChange:
+              latest.failedPercent -
+              first.failedPercent,
+
+            excellentChange:
+              latest.excellentPercent -
+              first.excellentPercent,
+          };
+        });
+
+      const weakestTest =
+        latestResults.length > 0
+          ? [...latestResults].sort(
+              (a, b) =>
+                b.failedPercent -
+                a.failedPercent
+            )[0]
+          : null;
+
+      const strongestTest =
+        latestResults.length > 0
+          ? [...latestResults].sort(
+              (a, b) =>
+                b.passedPercent -
+                a.passedPercent
+            )[0]
+          : null;
+
+      const biggestImprovement =
+        trends.length > 0
+          ? [...trends].sort(
+              (a, b) =>
+                b.passedChange -
+                a.passedChange
+            )[0]
+          : null;
+
+      const biggestDecline =
+        trends
+          .filter(
+            (item) =>
+              item.passedChange < 0
+          )
+          .sort(
+            (a, b) =>
+              a.passedChange -
+              b.passedChange
+          )[0] ?? null;
+
+      return {
+        trends,
+        weakestTest,
+        strongestTest,
+        biggestImprovement,
+        biggestDecline,
+      };
+    }, [
+      latestResults,
+      testCards,
+    ]);
+
   const aiMetrics =
     useMemo(() => {
       const result: Record<
@@ -566,15 +709,202 @@ export default function BattalionPage() {
         }
       > = {};
 
-      for (const item of latestResults) {
-        result[item.testName] = {
+      /*
+        1. תמונת מצב של כל בוחן
+      */
+      for (
+        const item of
+        latestResults
+      ) {
+        const card =
+          testCards.find(
+            (candidate) =>
+              candidate.test.name ===
+              item.testName
+          );
+
+        const ordered =
+          card
+            ? [...card.attempts].sort(
+                (a, b) =>
+                  a.attempt -
+                  b.attempt
+              )
+            : [];
+
+        const first =
+          ordered[0];
+
+        const change =
+          first &&
+          first.attempt !==
+            item.attempt
+            ? item.passedPercent -
+              first.passedPercent
+            : null;
+
+        result[
+          `בוחן: ${item.testName}`
+        ] = {
           failedPercent:
             item.failedPercent,
+
+          average:
+            [
+              `${attemptLabel(
+                item.attempt
+              )}: ${formatPercent(
+                item.passedPercent
+              )} עוברים`,
+              `${formatPercent(
+                item.excellentPercent
+              )} מצטיינים`,
+              change !== null
+                ? `שינוי במעבר מהמועד הראשון: ${signedPoints(
+                    change
+                  )} נק׳`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" | "),
+        };
+      }
+
+      /*
+        2. פרמטרים פנימיים — ריצה, מתח,
+           ספרינטים וכו׳, אם קיימים בענן
+      */
+      const metricGroups =
+        new Map<
+          string,
+          {
+            failed: number[];
+            averages: string[];
+          }
+        >();
+
+      for (
+        const item of
+        latestResults
+      ) {
+        for (
+          const [
+            key,
+            metric,
+          ] of
+          Object.entries(
+            item.metrics
+          )
+        ) {
+          const label =
+            getMetricLabel(
+              key
+            );
+
+          const current =
+            metricGroups.get(
+              label
+            ) ?? {
+              failed: [],
+              averages: [],
+            };
+
+          current.failed.push(
+            Number(
+              metric.failedPercent ??
+                0
+            )
+          );
+
+          if (
+            metric.average
+          ) {
+            current.averages.push(
+              metric.average
+            );
+          }
+
+          metricGroups.set(
+            label,
+            current
+          );
+        }
+      }
+
+      for (
+        const [
+          label,
+          group,
+        ] of
+        metricGroups.entries()
+      ) {
+        const failedAverage =
+          group.failed.length > 0
+            ? group.failed.reduce(
+                (sum, value) =>
+                  sum + value,
+                0
+              ) /
+              group.failed.length
+            : 0;
+
+        result[
+          `פרמטר: ${label}`
+        ] = {
+          failedPercent:
+            failedAverage,
+
+          average:
+            group.averages.length > 0
+              ? `ממוצעים שנקלטו: ${group.averages
+                  .slice(0, 4)
+                  .join(" | ")}`
+              : "ניתוח לפי אחוז אי־עמידה",
+        };
+      }
+
+      /*
+        3. מגמות בין מועדים
+      */
+      for (
+        const trend of
+        battalionIntelligence.trends
+      ) {
+        const latest =
+          latestResults.find(
+            (item) =>
+              item.testName ===
+              trend.testName
+          );
+
+        result[
+          `מגמה: ${trend.testName}`
+        ] = {
+          failedPercent:
+            latest?.failedPercent ??
+            0,
+
+          average:
+            `מ${attemptLabel(
+              trend.firstAttempt
+            )} ל${attemptLabel(
+              trend.latestAttempt
+            )}: שינוי בעוברים ${signedPoints(
+              trend.passedChange
+            )} נק׳ | שינוי בנכשלים ${signedPoints(
+              trend.failedChange
+            )} נק׳ | שינוי במצטיינים ${signedPoints(
+              trend.excellentChange
+            )} נק׳`,
         };
       }
 
       return result;
-    }, [latestResults]);
+    }, [
+      latestResults,
+      testCards,
+      battalionIntelligence,
+    ]);
 
   async function runAiAnalysis() {
     setAiLoading(true);
@@ -885,6 +1215,106 @@ export default function BattalionPage() {
         </section>
 
         {/* =================================================
+            COMMAND INTELLIGENCE
+        ================================================= */}
+
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+          <CommanderInsightCard
+            title="מוקד מרכזי"
+            value={
+              battalionIntelligence
+                .weakestTest
+                ? battalionIntelligence
+                    .weakestTest
+                    .testName
+                : "אין מספיק נתונים"
+            }
+            subtitle={
+              battalionIntelligence
+                .weakestTest
+                ? `${formatPercent(
+                    battalionIntelligence
+                      .weakestTest
+                      .failedPercent
+                  )} נכשלים במועד האחרון`
+                : "נדרש להזין תוצאות"
+            }
+            tone="danger"
+          />
+
+          <CommanderInsightCard
+            title="בוחן חזק"
+            value={
+              battalionIntelligence
+                .strongestTest
+                ? battalionIntelligence
+                    .strongestTest
+                    .testName
+                : "אין מספיק נתונים"
+            }
+            subtitle={
+              battalionIntelligence
+                .strongestTest
+                ? `${formatPercent(
+                    battalionIntelligence
+                      .strongestTest
+                      .passedPercent
+                  )} עוברים במועד האחרון`
+                : "נדרש להזין תוצאות"
+            }
+            tone="success"
+          />
+
+          <CommanderInsightCard
+            title="השיפור הגדול ביותר"
+            value={
+              battalionIntelligence
+                .biggestImprovement
+                ? battalionIntelligence
+                    .biggestImprovement
+                    .testName
+                : "אין עדיין השוואה"
+            }
+            subtitle={
+              battalionIntelligence
+                .biggestImprovement
+                ? `${signedPoints(
+                    battalionIntelligence
+                      .biggestImprovement
+                      .passedChange
+                  )} נק׳ באחוז העוברים`
+                : "נדרשים לפחות שני מועדים"
+            }
+            tone="info"
+          />
+
+          <CommanderInsightCard
+            title="דורש מעקב"
+            value={
+              battalionIntelligence
+                .biggestDecline
+                ? battalionIntelligence
+                    .biggestDecline
+                    .testName
+                : "אין ירידה מזוהה"
+            }
+            subtitle={
+              battalionIntelligence
+                .biggestDecline
+                ? `${signedPoints(
+                    battalionIntelligence
+                      .biggestDecline
+                      .passedChange
+                  )} נק׳ באחוז העוברים`
+                : "המגמות הקיימות יציבות/חיוביות"
+            }
+            tone="warning"
+          />
+
+        </section>
+
+        {/* =================================================
             COMMANDER AI
         ================================================= */}
 
@@ -903,7 +1333,7 @@ export default function BattalionPage() {
               </h2>
 
               <p className="text-slate-300 mt-2 max-w-3xl">
-                ניתוח ממוקד של נתוני גדוד {battalionName} בלבד — אחוזי מעבר, כישלון והצטיינות, מגמות בין הבחנים ומוקדי התערבות למפקד.
+                ניתוח ממוקד של גדוד {battalionName} בלבד — השוואה בין מועדים, זיהוי שיפור וירידה, בחנים חלשים, מוקדי אי־עמידה והמלצות ממוקדות להמשך האימונים.
               </p>
 
             </div>
@@ -1275,6 +1705,53 @@ export default function BattalionPage() {
 /* =========================================================
    COMPONENTS
 ========================================================= */
+
+function CommanderInsightCard({
+  title,
+  value,
+  subtitle,
+  tone,
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+  tone:
+    | "success"
+    | "danger"
+    | "warning"
+    | "info";
+}) {
+  const styles = {
+    success:
+      "bg-green-50 border-green-100 text-green-950",
+    danger:
+      "bg-red-50 border-red-100 text-red-950",
+    warning:
+      "bg-amber-50 border-amber-100 text-amber-950",
+    info:
+      "bg-blue-50 border-blue-100 text-blue-950",
+  };
+
+  return (
+    <div
+      className={`border rounded-2xl p-5 shadow-sm ${styles[tone]}`}
+    >
+      <p className="text-xs font-bold opacity-70">
+        {title}
+      </p>
+
+      <p className="text-xl font-black mt-2">
+        {value}
+      </p>
+
+      <p className="text-sm mt-2 opacity-80 leading-6">
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
+
 
 function BattalionAiListCard({
   title,
