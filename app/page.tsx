@@ -1080,7 +1080,7 @@ function TrackSection({
               ? "text-xs font-bold text-blue-700 uppercase tracking-wide"
               : variant ===
                 "staff"
-              ? "text-xs font-bold text-emerald-700 uppercase tracking-wide"
+              ? "text-xs font-bold text-cyan-700 uppercase tracking-wide"
               : "text-xs font-bold text-violet-700 uppercase tracking-wide"
           }
         >
@@ -1173,7 +1173,7 @@ function BattalionCard({
         dark
           ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]"
           : staff
-          ? "group rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-5 text-slate-900 transition hover:bg-emerald-100 hover:border-emerald-300 active:scale-[0.98]"
+          ? "group rounded-2xl border-2 border-cyan-200 bg-cyan-50 px-4 py-5 text-slate-900 transition hover:bg-cyan-100 hover:border-cyan-300 active:scale-[0.98]"
           : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]"
       }
     >

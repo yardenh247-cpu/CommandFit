@@ -781,7 +781,7 @@ _c = Home;
                 className: "mb-5",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        className: variant === "dark" ? "text-xs font-bold text-blue-700 uppercase tracking-wide" : variant === "staff" ? "text-xs font-bold text-emerald-700 uppercase tracking-wide" : "text-xs font-bold text-violet-700 uppercase tracking-wide",
+                        className: variant === "dark" ? "text-xs font-bold text-blue-700 uppercase tracking-wide" : variant === "staff" ? "text-xs font-bold text-cyan-700 uppercase tracking-wide" : "text-xs font-bold text-violet-700 uppercase tracking-wide",
                         children: "מגמה"
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
@@ -841,7 +841,7 @@ _c1 = TrackSection;
     const staff = variant === "staff";
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
         href: `/battalions/${encodeURIComponent(battalion)}`,
-        className: dark ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]" : staff ? "group rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-5 text-slate-900 transition hover:bg-emerald-100 hover:border-emerald-300 active:scale-[0.98]" : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]",
+        className: dark ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]" : staff ? "group rounded-2xl border-2 border-cyan-200 bg-cyan-50 px-4 py-5 text-slate-900 transition hover:bg-cyan-100 hover:border-cyan-300 active:scale-[0.98]" : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex items-center justify-between gap-3",

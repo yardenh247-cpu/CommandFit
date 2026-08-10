@@ -76,6 +76,11 @@
     --color-emerald-500: #00bb7f;
     --color-emerald-600: #009767;
     --color-emerald-700: #007956;
+    --color-cyan-50: #ecfeff;
+    --color-cyan-100: #cefafe;
+    --color-cyan-200: #a2f4fd;
+    --color-cyan-300: #53eafd;
+    --color-cyan-700: #007492;
     --color-sky-50: #f0f9ff;
     --color-sky-100: #dff2fe;
     --color-sky-200: #b8e6fe;
@@ -202,6 +207,11 @@
       --color-emerald-500: lab(66.9756% -58.27 19.5419);
       --color-emerald-600: lab(55.0481% -49.9246 15.93);
       --color-emerald-700: lab(44.4871% -41.0396 11.0361);
+      --color-cyan-50: lab(98.3303% -5.97429 -2.62109);
+      --color-cyan-100: lab(95.3146% -13.8285 -6.84733);
+      --color-cyan-200: lab(91.0821% -24.0435 -12.8306);
+      --color-cyan-300: lab(85.3886% -36.7635 -21.5717);
+      --color-cyan-700: lab(44.7267% -21.5987 -26.118);
       --color-sky-50: lab(97.3623% -2.33799 -4.13098);
       --color-sky-100: lab(94.3709% -4.56053 -8.23453);
       --color-sky-200: lab(88.6983% -11.3978 -16.8488);
@@ -1053,6 +1063,10 @@
     border-color: var(--color-blue-200);
   }
 
+  .border-cyan-200 {
+    border-color: var(--color-cyan-200);
+  }
+
   .border-emerald-200 {
     border-color: var(--color-emerald-200);
   }
@@ -1189,6 +1203,10 @@
 
   .bg-blue-700 {
     background-color: var(--color-blue-700);
+  }
+
+  .bg-cyan-50 {
+    background-color: var(--color-cyan-50);
   }
 
   .bg-emerald-50 {
@@ -1694,6 +1712,10 @@
     color: var(--color-blue-950);
   }
 
+  .text-cyan-700 {
+    color: var(--color-cyan-700);
+  }
+
   .text-emerald-700 {
     color: var(--color-emerald-700);
   }
@@ -1903,6 +1925,10 @@
   }
 
   @media (hover: hover) {
+    .hover\:border-cyan-300:hover {
+      border-color: var(--color-cyan-300);
+    }
+
     .hover\:border-emerald-300:hover {
       border-color: var(--color-emerald-300);
     }
@@ -1933,6 +1959,10 @@
 
     .hover\:bg-blue-800:hover {
       background-color: var(--color-blue-800);
+    }
+
+    .hover\:bg-cyan-100:hover {
+      background-color: var(--color-cyan-100);
     }
 
     .hover\:bg-emerald-100:hover {
