@@ -612,6 +612,10 @@
     display: grid;
   }
 
+  .hidden {
+    display: none;
+  }
+
   .inline-block {
     display: inline-block;
   }
@@ -1900,6 +1904,10 @@
 
     .sm\:hidden {
       display: none;
+    }
+
+    .sm\:inline-flex {
+      display: inline-flex;
     }
 
     .sm\:h-14 {

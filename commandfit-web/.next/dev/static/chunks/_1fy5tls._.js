@@ -512,7 +512,7 @@ function PercentageResultsPage() {
                     result && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
-                                className: "bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4 sticky top-0 z-20 border border-slate-200",
+                                className: "bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4 border border-slate-200",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3",
                                     children: [
@@ -548,7 +548,7 @@ function PercentageResultsPage() {
                                             type: "button",
                                             disabled: saving || !validation.valid || !calculator.valid,
                                             onClick: saveResult,
-                                            className: "bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40",
+                                            className: "hidden sm:inline-flex bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40",
                                             children: saving ? "שומר..." : "💾 שמירת תוצאות המועד"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",

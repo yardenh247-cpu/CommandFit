@@ -433,7 +433,7 @@ export default function PercentageResultsPage() {
 
         {result && (
           <>
-            <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4 sticky top-0 z-20 border border-slate-200">
+            <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4 border border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-slate-500">מועד נבחר</p>
@@ -447,7 +447,7 @@ export default function PercentageResultsPage() {
                     type="button"
                     disabled={saving || !validation.valid || !calculator.valid}
                     onClick={saveResult}
-                    className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
+                    className="hidden sm:inline-flex bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
                   >
                     {saving ? "שומר..." : "💾 שמירת תוצאות המועד"}
                   </button>
