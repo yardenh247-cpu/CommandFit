@@ -19,7 +19,9 @@ import {
 import {
   supabase,
 } from "@/lib/supabase";
-
+import {
+  publishNotification,
+} from "@/lib/notifications";
 /* =========================================================
    TYPES
 ========================================================= */
@@ -1021,7 +1023,36 @@ export default function TestPage() {
     setMessage(
       "הנתונים נשמרו בענן בהצלחה"
     );
+await publishNotification({
+  cycleId,
 
+  battalion:
+    battalionName,
+
+  eventType:
+    "test_update",
+
+  severity:
+    "success",
+
+  title:
+    `גדוד ${battalionName} – ${testName}`,
+
+  message:
+    `${getAttemptLabel(
+      result.attempt
+    )} עודכן. לחץ לצפייה בבוחן ובפירוט הנתונים.`,
+
+  href:
+    `/battalions/${encodeURIComponent(
+      battalionName
+    )}/tests/${encodeURIComponent(
+      testName
+    )}`,
+
+  dedupeKey:
+    `test-update:${cycleId}:${battalionName}:${testName}:attempt-${result.attempt}`,
+});
     setSaving(
       false
     );
