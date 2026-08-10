@@ -2083,42 +2083,9 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     ()=>isTestAllowedForBattalion
 ]);
 /* =========================================================
-   דקל
-   כש"ג פתיחה → לורן רגיל → כש"ג סוף → לורן משופר
-========================================================= */ const DEKEL_TESTS = [
-    {
-        id: "fitness-opening",
-        name: 'כש"ג פתיחה',
-        type: "fitness",
-        order: 1,
-        description: "בוחן הכשירות הגופנית בתחילת התקופה"
-    },
-    {
-        id: "loran-regular",
-        name: "לורן",
-        type: "loran",
-        order: 2,
-        description: "בוחן לורן רגיל לפי אוכלוסיית הלורן והמערך האישי"
-    },
-    {
-        id: "fitness-final",
-        name: 'כש"ג סוף',
-        type: "fitness",
-        order: 3,
-        description: "בוחן הכשירות הגופנית בסיום התקופה"
-    },
-    {
-        id: "loran-improved",
-        name: "לורן משופר",
-        type: "improved-loran",
-        order: 4,
-        description: "בוחן לורן משופר"
-    }
-];
-/* =========================================================
-   רימון
-   כש"ג פתיחה → לורן רגיל → כש"ג סוף → לורן משופר
-========================================================= */ const RIMON_TESTS = [
+   דקל / רימון
+   כש"ג פתיחה → לורן → כש"ג סוף → לורן משופר
+========================================================= */ const FIGHTER_FULL_TESTS = [
     {
         id: "fitness-opening",
         name: 'כש"ג פתיחה',
@@ -2151,10 +2118,6 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 /* =========================================================
    גפן
    לורן משופר → כש"ג סוף → בוחן מ"מ
-
-   אין:
-   - כש"ג פתיחה
-   - לורן רגיל
 ========================================================= */ const GEFEN_TESTS = [
     {
         id: "loran-improved",
@@ -2178,10 +2141,69 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
         description: 'בוחן מ"מ – מתקיים בגדוד גפן בלבד'
     }
 ];
+/* =========================================================
+   הדס / דולב
+   נשמר לפי ההגדרה שכבר הייתה קיימת באתר:
+   כש"ג פתיחה → לורן → כש"ג סוף → לורן מסכם
+========================================================= */ const HADAR_DOLAV_TESTS = [
+    {
+        id: "fitness-opening",
+        name: 'כש"ג פתיחה',
+        type: "fitness",
+        order: 1,
+        description: "בוחן כשירות פתיחה"
+    },
+    {
+        id: "loran-regular",
+        name: "לורן",
+        type: "loran",
+        order: 2,
+        description: "בוחן לורן"
+    },
+    {
+        id: "fitness-final",
+        name: 'כש"ג סוף',
+        type: "fitness",
+        order: 3,
+        description: "בוחן כשירות סוף"
+    },
+    {
+        id: "loran-improved",
+        name: "לורן מסכם",
+        type: "improved-loran",
+        order: 4,
+        description: "בוחן לורן מסכם"
+    }
+];
+/* =========================================================
+   מגמת מטה
+   ארז / ברוש / חרוב / אלון
+========================================================= */ const STAFF_TESTS = [
+    {
+        id: "run-3000",
+        name: "ריצת 3000 מטר",
+        type: "fitness",
+        order: 1,
+        description: "ריצת 3000 מטר"
+    },
+    {
+        id: "push-ups",
+        name: "שכיבות סמיכה",
+        type: "fitness",
+        order: 2,
+        description: "בוחן שכיבות סמיכה"
+    }
+];
 const BATTALION_TESTS = {
-    דקל: DEKEL_TESTS,
-    רימון: RIMON_TESTS,
-    גפן: GEFEN_TESTS
+    דקל: FIGHTER_FULL_TESTS,
+    רימון: FIGHTER_FULL_TESTS,
+    גפן: GEFEN_TESTS,
+    הדס: HADAR_DOLAV_TESTS,
+    דולב: HADAR_DOLAV_TESTS,
+    ארז: STAFF_TESTS,
+    ברוש: STAFF_TESTS,
+    חרוב: STAFF_TESTS,
+    אלון: STAFF_TESTS
 };
 function getBattalionTests(battalionName) {
     return (BATTALION_TESTS[battalionName] ?? []).slice().sort((a, b)=>a.order - b.order);
