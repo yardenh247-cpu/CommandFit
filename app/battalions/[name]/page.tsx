@@ -22,6 +22,8 @@ import {
   supabase,
 } from "@/lib/supabase";
 
+import NotificationsPanel from "@/components/NotificationsPanel";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -638,7 +640,10 @@ export default function BattalionPage() {
           </p>
 
         </section>
-
+<NotificationsPanel
+  battalion={battalionName}
+  compact
+/>
         {/* KPI */}
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
