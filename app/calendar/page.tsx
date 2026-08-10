@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -607,6 +608,11 @@ export default function CalendarPage() {
       false
     );
 
+  const formSectionRef =
+    useRef<HTMLElement | null>(
+      null
+    );
+
   const [
     trackFilter,
     setTrackFilter,
@@ -1079,6 +1085,41 @@ export default function CalendarPage() {
   }
 
   /* =======================================================
+     QUICK ADD FROM CALENDAR DAY
+  ======================================================= */
+
+  function openQuickAdd(
+    selectedDate: string
+  ) {
+    if (!isAdmin) {
+      return;
+    }
+
+    setFormDate(
+      selectedDate
+    );
+
+    setShowForm(
+      true
+    );
+
+    setMessage(
+      `תיאום מהיר ל־${selectedDate}`
+    );
+
+    window.setTimeout(
+      () => {
+        formSectionRef.current
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      },
+      80
+    );
+  }
+
+  /* =======================================================
      SAVE EVENT
   ======================================================= */
 
@@ -1318,7 +1359,10 @@ export default function CalendarPage() {
 
         {showForm &&
           isAdmin && (
-          <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+          <section
+            ref={formSectionRef}
+            className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6 scroll-mt-4"
+          >
 
             <h2 className="text-2xl font-black">
               הוספת בחנים
@@ -1867,14 +1911,62 @@ export default function CalendarPage() {
                     key={
                       key
                     }
-                    className={`min-h-[105px] sm:min-h-[150px] border-b border-l p-1.5 sm:p-2 ${dayStyle}`}
+                    role={
+                      isAdmin
+                        ? "button"
+                        : undefined
+                    }
+                    tabIndex={
+                      isAdmin
+                        ? 0
+                        : undefined
+                    }
+                    title={
+                      isAdmin
+                        ? "לחץ לתיאום בוחן בתאריך זה"
+                        : undefined
+                    }
+                    onClick={() =>
+                      openQuickAdd(
+                        key
+                      )
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                          "Enter" ||
+                        event.key ===
+                          " "
+                      ) {
+                        event.preventDefault();
+                        openQuickAdd(
+                          key
+                        );
+                      }
+                    }}
+                    className={`min-h-[105px] sm:min-h-[150px] border-b border-l p-1.5 sm:p-2 ${dayStyle} ${
+                      isAdmin
+                        ? "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-blue-400 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                        : ""
+                    }`}
                   >
 
                     <div className="flex items-center justify-between">
 
-                      <span className="text-xs sm:text-sm font-black">
-                        {day}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-black">
+                          {day}
+                        </span>
+
+                        {isAdmin && (
+                          <span
+                            className="text-[10px] sm:text-xs text-blue-600 font-black"
+                            aria-hidden="true"
+                          >
+                            ＋
+                          </span>
+                        )}
+                      </div>
 
                       {load.maxConcurrent >
                         2 && (
@@ -1910,6 +2002,12 @@ export default function CalendarPage() {
                             <div
                               key={
                                 event.id
+                              }
+                              onClick={(clickEvent) =>
+                                clickEvent.stopPropagation()
+                              }
+                              onKeyDown={(keyEvent) =>
+                                keyEvent.stopPropagation()
                               }
                               className={
                                 major
