@@ -745,6 +745,10 @@
     margin-right: calc(var(--spacing) * 2);
   }
 
+  .mb-1 {
+    margin-bottom: var(--spacing);
+  }
+
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
   }
@@ -2048,6 +2052,10 @@
     opacity: .7;
   }
 
+  .opacity-75 {
+    opacity: .75;
+  }
+
   .opacity-80 {
     opacity: .8;
   }
@@ -2259,6 +2267,10 @@
     background-color: var(--color-slate-50);
   }
 
+  .disabled\:bg-slate-100:disabled {
+    background-color: var(--color-slate-100);
+  }
+
   .disabled\:opacity-40:disabled {
     opacity: .4;
   }
@@ -2282,6 +2294,10 @@
 
     .sm\:block {
       display: block;
+    }
+
+    .sm\:flex {
+      display: flex;
     }
 
     .sm\:hidden {

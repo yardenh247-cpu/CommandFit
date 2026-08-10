@@ -15,6 +15,7 @@ type PercentageResult = {
   passedPercent: number;
   failedPercent: number;
   excellentPercent: number;
+  testDate: string;
 };
 
 type CloudRow = {
@@ -23,6 +24,7 @@ type CloudRow = {
   passed_percent: number | null;
   failed_percent: number | null;
   excellent_percent: number | null;
+  test_date: string | null;
 };
 
 function emptyResult(testName: string, attempt = 1): PercentageResult {
@@ -32,6 +34,7 @@ function emptyResult(testName: string, attempt = 1): PercentageResult {
     passedPercent: 0,
     failedPercent: 0,
     excellentPercent: 0,
+    testDate: "",
   };
 }
 
@@ -126,7 +129,7 @@ export default function PercentageResultsPage() {
 
       const { data, error } = await supabase
         .from("percentage_test_results")
-        .select("test_name,attempt,passed_percent,failed_percent,excellent_percent")
+        .select("test_name,attempt,passed_percent,failed_percent,excellent_percent,test_date")
         .eq("cycle_id", cycleId)
         .eq("battalion", battalionName)
         .eq("test_name", selectedTest.name)
@@ -149,6 +152,7 @@ export default function PercentageResultsPage() {
         passedPercent: Number(row.passed_percent ?? 0),
         failedPercent: Number(row.failed_percent ?? 100),
         excellentPercent: Number(row.excellent_percent ?? 0),
+        testDate: row.test_date ?? "",
       }));
 
       setAttempts(loaded);
@@ -243,6 +247,10 @@ export default function PercentageResultsPage() {
   const validation = useMemo(() => {
     if (!result) return { valid: false, text: "" };
 
+    if (!result.testDate) {
+      return { valid: false, text: "יש להזין תאריך ביצוע לבוחן." };
+    }
+
     if (
       result.passedPercent < 0 ||
       result.passedPercent > 100 ||
@@ -317,6 +325,7 @@ export default function PercentageResultsPage() {
           passed_percent: result.passedPercent,
           failed_percent: result.failedPercent,
           excellent_percent: result.excellentPercent,
+          test_date: result.testDate,
           updated_at: new Date().toISOString(),
         },
         {
@@ -337,6 +346,112 @@ export default function PercentageResultsPage() {
     });
 
     setMessage("האחוזים נשמרו בענן בהצלחה");
+    setSaving(false);
+  }
+
+
+  async function deleteCurrentAttempt() {
+    if (
+      isReadOnly ||
+      !result ||
+      !selectedTest
+    ) {
+      return;
+    }
+
+    const exists =
+      attempts.some(
+        (item) =>
+          item.attempt ===
+          result.attempt
+      );
+
+    if (!exists) {
+      setMessage(
+        "המועד עדיין לא נשמר ולכן אין מה למחוק."
+      );
+      return;
+    }
+
+    const approved =
+      window.confirm(
+        `למחוק את ${attemptLabel(
+          result.attempt
+        )} של ${selectedTest.name}?\n\nהתוצאות והתאריך של המועד יימחקו לצמיתות.`
+      );
+
+    if (!approved) {
+      return;
+    }
+
+    setSaving(true);
+    setMessage(
+      "מוחק את המועד..."
+    );
+
+    const { error } =
+      await supabase
+        .from(
+          "percentage_test_results"
+        )
+        .delete()
+        .eq(
+          "cycle_id",
+          cycleId
+        )
+        .eq(
+          "battalion",
+          battalionName
+        )
+        .eq(
+          "test_name",
+          selectedTest.name
+        )
+        .eq(
+          "attempt",
+          result.attempt
+        );
+
+    if (error) {
+      console.error(error);
+      setMessage(
+        `מחיקת המועד נכשלה: ${error.message}`
+      );
+      setSaving(false);
+      return;
+    }
+
+    const remaining =
+      attempts
+        .filter(
+          (item) =>
+            item.attempt !==
+            result.attempt
+        )
+        .sort(
+          (a, b) =>
+            a.attempt -
+            b.attempt
+        );
+
+    setAttempts(
+      remaining
+    );
+
+    setResult(
+      remaining.length > 0
+        ? remaining[
+            remaining.length - 1
+          ]
+        : emptyResult(
+            selectedTest.name,
+            1
+          )
+    );
+
+    setMessage(
+      "המועד נמחק בהצלחה"
+    );
     setSaving(false);
   }
 
@@ -424,7 +539,12 @@ export default function PercentageResultsPage() {
                       : "bg-slate-100 text-slate-700 rounded-xl px-4 py-2"
                   }
                 >
-                  {attemptLabel(item.attempt)}
+                  <span>{attemptLabel(item.attempt)}</span>
+                  {item.testDate && (
+                    <span className="block text-[11px] opacity-75 mt-0.5">
+                      {new Date(`${item.testDate}T00:00:00`).toLocaleDateString("he-IL")}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -442,15 +562,62 @@ export default function PercentageResultsPage() {
                   </h2>
                 </div>
 
+                <div className="w-full sm:w-auto">
+                  <label className="block text-xs font-bold text-slate-600 mb-1">
+                    תאריך ביצוע הבוחן
+                  </label>
+                  <input
+                    type="date"
+                    value={result.testDate}
+                    disabled={isReadOnly}
+                    onChange={(event) => {
+                      setResult({
+                        ...result,
+                        testDate: event.target.value,
+                      });
+                      setMessage("");
+                    }}
+                    className="w-full sm:w-auto border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900 disabled:bg-slate-100"
+                  />
+                  {!!attempts.find((item) => item.attempt === result.attempt) && !isReadOnly && (
+                    <p className="text-[11px] text-blue-700 font-bold mt-1">
+                      ✏️ ניתן לשנות את התאריך ולשמור מחדש את המועד
+                    </p>
+                  )}
+                </div>
+
                 {!isReadOnly && (
-                  <button
-                    type="button"
-                    disabled={saving || !validation.valid || !calculator.valid}
-                    onClick={saveResult}
-                    className="hidden sm:inline-flex bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
-                  >
-                    {saving ? "שומר..." : "💾 שמירת תוצאות המועד"}
-                  </button>
+                  <div className="hidden sm:flex items-center gap-2">
+                    {attempts.some(
+                      (item) =>
+                        item.attempt ===
+                        result.attempt
+                    ) && (
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={
+                          deleteCurrentAttempt
+                        }
+                        className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl px-4 py-3 font-bold disabled:opacity-40"
+                      >
+                        🗑️ מחיקת מועד
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={saving || !validation.valid || !calculator.valid}
+                      onClick={saveResult}
+                      className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
+                    >
+                      {saving
+                        ? "שומר..."
+                        : attempts.some((item) => item.attempt === result.attempt)
+                        ? "💾 שמירת שינויים במועד"
+                        : "💾 שמירת תוצאות המועד"}
+                    </button>
+                  </div>
                 )}
               </div>
             </section>
@@ -542,14 +709,35 @@ export default function PercentageResultsPage() {
             </section>
 
             {!isReadOnly && (
-              <div className="sticky bottom-3 z-30 sm:hidden">
+              <div className="sticky bottom-3 z-30 sm:hidden flex gap-2">
+                {attempts.some(
+                  (item) =>
+                    item.attempt ===
+                    result.attempt
+                ) && (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={
+                      deleteCurrentAttempt
+                    }
+                    className="bg-red-600 text-white rounded-2xl px-4 py-4 font-black shadow-xl disabled:opacity-40"
+                  >
+                    🗑️
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={saving || !validation.valid || !calculator.valid}
                   onClick={saveResult}
-                  className="w-full bg-slate-950 text-white rounded-2xl px-5 py-4 font-black shadow-xl disabled:opacity-40"
+                  className="flex-1 bg-slate-950 text-white rounded-2xl px-5 py-4 font-black shadow-xl disabled:opacity-40"
                 >
-                  {saving ? "שומר..." : "💾 שמירת תוצאות המועד"}
+                  {saving
+                    ? "שומר..."
+                    : attempts.some((item) => item.attempt === result.attempt)
+                    ? "💾 שמירת שינויים במועד"
+                    : "💾 שמירת תוצאות המועד"}
                 </button>
               </div>
             )}
