@@ -1119,7 +1119,7 @@ export default function BattalionPage() {
               )}/cadets`}
               className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
-              📈 הזנת אחוזים
+              📈 הזנת נתונים
             </Link>
 
             <Link
