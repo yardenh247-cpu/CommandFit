@@ -1440,10 +1440,7 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 "[project]/lib/cycles.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-/* =========================================================
-   COMMAND FIT
-   ניהול מחזורים
-========================================================= */ __turbopack_context__.s([
+__turbopack_context__.s([
     "closeCycle",
     ()=>closeCycle,
     "createCycle",
@@ -1472,6 +1469,8 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     ()=>getResultsStorageKey,
     "hasLegacyData",
     ()=>hasLegacyData,
+    "hydrateCyclesFromCloud",
+    ()=>hydrateCyclesFromCloud,
     "migrateLegacyDataToCycle",
     ()=>migrateLegacyDataToCycle,
     "reopenCycle",
@@ -1479,6 +1478,11 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     "setActiveCycle",
     ()=>setActiveCycle
 ]);
+/* =========================================================
+   COMMAND FIT
+   ניהול מחזורים — Local cache + Supabase sync
+========================================================= */ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase.ts [app-client] (ecmascript)");
+;
 /* =========================================================
    STORAGE KEYS
 ========================================================= */ const CYCLES_STORAGE_KEY = "commandfit-cycles";
@@ -1498,6 +1502,32 @@ const ACTIVE_CYCLE_PREFIX = "commandfit-active-cycle";
 function sortCycles(cycles) {
     return cycles.slice().sort((a, b)=>new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
+function toCloudRow(cycle) {
+    return {
+        id: cycle.id,
+        name: cycle.name,
+        battalion: cycle.battalion,
+        status: cycle.status,
+        start_date: cycle.startDate,
+        end_date: cycle.endDate ?? null,
+        source_cycles: cycle.sourceCycles ?? null,
+        created_at: cycle.createdAt,
+        closed_at: cycle.closedAt ?? null
+    };
+}
+function fromCloudRow(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        battalion: row.battalion,
+        status: row.status,
+        startDate: row.start_date,
+        endDate: row.end_date ?? undefined,
+        sourceCycles: row.source_cycles ?? undefined,
+        createdAt: row.created_at,
+        closedAt: row.closed_at ?? undefined
+    };
+}
 function getAllCycles() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
@@ -1505,11 +1535,87 @@ function getAllCycles() {
     return sortCycles(safeParse(saved, []));
 }
 /* =========================================================
-   SAVE ALL CYCLES
+   SAVE LOCAL CACHE
 ========================================================= */ function saveAllCycles(cycles) {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
-    localStorage.setItem(CYCLES_STORAGE_KEY, JSON.stringify(cycles));
+    localStorage.setItem(CYCLES_STORAGE_KEY, JSON.stringify(sortCycles(cycles)));
+}
+async function hydrateCyclesFromCloud() {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    const localCycles = getAllCycles();
+    const { data: cloudData, error: cloudError } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").select(`
+          id,
+          name,
+          battalion,
+          status,
+          start_date,
+          end_date,
+          source_cycles,
+          created_at,
+          closed_at
+        `).order("created_at", {
+        ascending: false
+    });
+    if (cloudError) {
+        console.error("Cycles cloud load error:", cloudError);
+        return localCycles;
+    }
+    const existingIds = new Set((cloudData ?? []).map((row)=>row.id));
+    const missingLocal = localCycles.filter((cycle)=>!existingIds.has(cycle.id));
+    /*
+    מעלים רק מחזורים מקומיים שחסרים בענן.
+    כך לא דורסים מידע שכבר עודכן ממחשב אחר.
+  */ for (const cycle of missingLocal){
+        if (cycle.status === "active") {
+            await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").update({
+                status: "closed",
+                closed_at: new Date().toISOString()
+            }).eq("battalion", cycle.battalion).eq("status", "active");
+        }
+        const { error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").upsert(toCloudRow(cycle), {
+            onConflict: "id"
+        });
+        if (error) {
+            console.error("Legacy cycle cloud migration error:", error);
+        }
+    }
+    const { data: refreshed, error: refreshError } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").select(`
+          id,
+          name,
+          battalion,
+          status,
+          start_date,
+          end_date,
+          source_cycles,
+          created_at,
+          closed_at
+        `).order("created_at", {
+        ascending: false
+    });
+    if (refreshError) {
+        console.error("Cycles cloud refresh error:", refreshError);
+        return localCycles;
+    }
+    const cycles = (refreshed ?? []).map(fromCloudRow);
+    saveAllCycles(cycles);
+    /*
+    אם אין בחירה מקומית לגדוד אבל יש מחזור פעיל בענן,
+    בוחרים אותו אוטומטית.
+  */ const activeByBattalion = new Map();
+    for (const cycle of cycles){
+        if (cycle.status === "active" && !activeByBattalion.has(cycle.battalion)) {
+            activeByBattalion.set(cycle.battalion, cycle);
+        }
+    }
+    for (const [battalion, cycle] of activeByBattalion){
+        const localActiveId = getActiveCycleId(battalion);
+        if (!localActiveId || !cycles.some((item)=>item.id === localActiveId && item.battalion === battalion)) {
+            setActiveCycle(battalion, cycle.id);
+        }
+    }
+    return cycles;
 }
 function getCyclesByBattalion(battalion) {
     return getAllCycles().filter((cycle)=>cycle.battalion === battalion);
@@ -1525,7 +1631,10 @@ function getActiveCycleId(battalion) {
 function getActiveCycle(battalion) {
     const cycleId = getActiveCycleId(battalion);
     if (!cycleId) {
-        return null;
+        /*
+      fallback: אם אין בחירה מקומית,
+      נחזיר את המחזור הפעיל האחרון שיש ב-cache.
+    */ return getCyclesByBattalion(battalion).find((cycle)=>cycle.status === "active") ?? null;
     }
     const cycle = getCycleById(cycleId);
     if (!cycle || cycle.battalion !== battalion) {
@@ -1542,6 +1651,55 @@ function setActiveCycle(battalion, cycleId) {
     }
     localStorage.setItem(`${ACTIVE_CYCLE_PREFIX}-${battalion}`, cycleId);
 }
+/* =========================================================
+   CLOUD MUTATIONS
+========================================================= */ async function createCycleInCloud(cycle) {
+    /*
+    סוגרים קודם מחזור פעיל קיים כדי לא להפר
+    את ה-unique index של מחזור פעיל אחד לגדוד.
+  */ const now = new Date().toISOString();
+    const { error: closeError } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").update({
+        status: "closed",
+        closed_at: now
+    }).eq("battalion", cycle.battalion).eq("status", "active");
+    if (closeError) {
+        console.error("Close previous active cycle in cloud failed:", closeError);
+    }
+    const { error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").upsert(toCloudRow(cycle), {
+        onConflict: "id"
+    });
+    if (error) {
+        console.error("Create cycle in cloud failed:", error);
+    }
+}
+async function closeCycleInCloud(cycle) {
+    const { error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").update({
+        status: cycle.status,
+        end_date: cycle.endDate ?? null,
+        closed_at: cycle.closedAt ?? null
+    }).eq("id", cycle.id);
+    if (error) {
+        console.error("Close cycle in cloud failed:", error);
+    }
+}
+async function reopenCycleInCloud(cycle) {
+    const now = new Date().toISOString();
+    const { error: closeError } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").update({
+        status: "closed",
+        closed_at: now
+    }).eq("battalion", cycle.battalion).eq("status", "active").neq("id", cycle.id);
+    if (closeError) {
+        console.error("Close other active cycles in cloud failed:", closeError);
+    }
+    const { error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").update({
+        status: "active",
+        end_date: null,
+        closed_at: null
+    }).eq("id", cycle.id);
+    if (error) {
+        console.error("Reopen cycle in cloud failed:", error);
+    }
+}
 function createCycle({ name, battalion, startDate, sourceCycles }) {
     const now = new Date().toISOString();
     const cycle = {
@@ -1554,9 +1712,7 @@ function createCycle({ name, battalion, startDate, sourceCycles }) {
         createdAt: now
     };
     const cycles = getAllCycles();
-    /*
-    רק מחזור פעיל אחד לכל גדוד
-  */ const updated = cycles.map((item)=>{
+    const updated = cycles.map((item)=>{
         if (item.battalion === battalion && item.status === "active") {
             return {
                 ...item,
@@ -1569,6 +1725,7 @@ function createCycle({ name, battalion, startDate, sourceCycles }) {
     updated.push(cycle);
     saveAllCycles(updated);
     setActiveCycle(battalion, cycle.id);
+    void createCycleInCloud(cycle);
     return cycle;
 }
 function closeCycle(cycleId, endDate) {
@@ -1589,6 +1746,7 @@ function closeCycle(cycleId, endDate) {
     if (activeId === cycleId && ("TURBOPACK compile-time value", "object") !== "undefined") {
         localStorage.removeItem(`${ACTIVE_CYCLE_PREFIX}-${current.battalion}`);
     }
+    void closeCycleInCloud(updatedCycle);
     return updatedCycle;
 }
 function reopenCycle(cycleId) {
@@ -1597,10 +1755,7 @@ function reopenCycle(cycleId) {
     if (!current) {
         return null;
     }
-    /*
-    סוגרים כל מחזור פעיל אחר
-    של אותו גדוד
-  */ const updated = cycles.map((cycle)=>{
+    const updated = cycles.map((cycle)=>{
         if (cycle.battalion === current.battalion && cycle.id !== cycleId && cycle.status === "active") {
             return {
                 ...cycle,
@@ -1620,7 +1775,11 @@ function reopenCycle(cycleId) {
     });
     saveAllCycles(updated);
     setActiveCycle(current.battalion, cycleId);
-    return updated.find((cycle)=>cycle.id === cycleId) ?? null;
+    const reopened = updated.find((cycle)=>cycle.id === cycleId) ?? null;
+    if (reopened) {
+        void reopenCycleInCloud(reopened);
+    }
+    return reopened;
 }
 function deleteCycle(cycleId) {
     const cycles = getAllCycles();
@@ -1634,6 +1793,14 @@ function deleteCycle(cycleId) {
     if (activeId === cycleId && ("TURBOPACK compile-time value", "object") !== "undefined") {
         localStorage.removeItem(`${ACTIVE_CYCLE_PREFIX}-${cycle.battalion}`);
     }
+    /*
+    שמירה לעתיד בלבד — אם נשתמש במחיקה בפועל,
+    היא תימחק גם מהענן.
+  */ void __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("commandfit_cycles").delete().eq("id", cycleId).then(({ error })=>{
+        if (error) {
+            console.error("Delete cycle from cloud failed:", error);
+        }
+    });
     return true;
 }
 function getCadetsStorageKey(battalion, cycleId) {
@@ -1651,9 +1818,7 @@ function getLegacyResultsStorageKey(battalion, testName) {
 function migrateLegacyDataToCycle(battalion, cycleId, testNames) {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
-    /*
-    צוערים
-  */ const legacyCadetsKey = getLegacyCadetsStorageKey(battalion);
+    const legacyCadetsKey = getLegacyCadetsStorageKey(battalion);
     const newCadetsKey = getCadetsStorageKey(battalion, cycleId);
     const existingNewCadets = localStorage.getItem(newCadetsKey);
     if (!existingNewCadets) {
@@ -1662,9 +1827,7 @@ function migrateLegacyDataToCycle(battalion, cycleId, testNames) {
             localStorage.setItem(newCadetsKey, legacyCadets);
         }
     }
-    /*
-    תוצאות
-  */ testNames.forEach((testName)=>{
+    testNames.forEach((testName)=>{
         const legacyKey = getLegacyResultsStorageKey(battalion, testName);
         const newKey = getResultsStorageKey(battalion, cycleId, testName);
         const existingNew = localStorage.getItem(newKey);

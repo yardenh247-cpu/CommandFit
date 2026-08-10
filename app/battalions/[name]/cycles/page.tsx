@@ -20,6 +20,7 @@ import {
   getCycleStatusLabel,
   getCyclesByBattalion,
   migrateLegacyDataToCycle,
+  hydrateCyclesFromCloud,
   reopenCycle,
   setActiveCycle,
   type CourseCycle,
@@ -129,7 +130,27 @@ export default function CyclesPage() {
   }
 
   useEffect(() => {
-    refresh();
+    let cancelled =
+      false;
+
+    async function loadCycles() {
+      await hydrateCyclesFromCloud();
+
+      if (
+        cancelled
+      ) {
+        return;
+      }
+
+      refresh();
+    }
+
+    loadCycles();
+
+    return () => {
+      cancelled =
+        true;
+    };
   }, [
     battalionName,
   ]);

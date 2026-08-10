@@ -1,7 +1,11 @@
 /* =========================================================
    COMMAND FIT
-   ניהול מחזורים
+   ניהול מחזורים — Local cache + Supabase sync
 ========================================================= */
+
+import {
+  supabase,
+} from "@/lib/supabase";
 
 export type CycleStatus =
   | "active"
@@ -41,6 +45,27 @@ const ACTIVE_CYCLE_PREFIX =
   "commandfit-active-cycle";
 
 /* =========================================================
+   CLOUD TYPES
+========================================================= */
+
+type CloudCycleRow = {
+  id: string;
+  name: string;
+  battalion: string;
+  status: CycleStatus;
+  start_date: string;
+  end_date: string | null;
+  source_cycles:
+    | {
+        dekel?: string;
+        rimon?: string;
+      }
+    | null;
+  created_at: string;
+  closed_at: string | null;
+};
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -77,8 +102,59 @@ function sortCycles(
     );
 }
 
+function toCloudRow(
+  cycle: CourseCycle
+) {
+  return {
+    id: cycle.id,
+    name: cycle.name,
+    battalion:
+      cycle.battalion,
+    status:
+      cycle.status,
+    start_date:
+      cycle.startDate,
+    end_date:
+      cycle.endDate ?? null,
+    source_cycles:
+      cycle.sourceCycles ?? null,
+    created_at:
+      cycle.createdAt,
+    closed_at:
+      cycle.closedAt ?? null,
+  };
+}
+
+function fromCloudRow(
+  row: CloudCycleRow
+): CourseCycle {
+  return {
+    id: row.id,
+    name: row.name,
+    battalion:
+      row.battalion,
+    status:
+      row.status,
+    startDate:
+      row.start_date,
+    endDate:
+      row.end_date ??
+      undefined,
+    sourceCycles:
+      row.source_cycles ??
+      undefined,
+    createdAt:
+      row.created_at,
+    closedAt:
+      row.closed_at ??
+      undefined,
+  };
+}
+
 /* =========================================================
    GET ALL CYCLES
+   נשאר סינכרוני כדי לא לשבור את שאר המערכת.
+   localStorage משמש כ-cache מקומי.
 ========================================================= */
 
 export function getAllCycles():
@@ -106,7 +182,7 @@ export function getAllCycles():
 }
 
 /* =========================================================
-   SAVE ALL CYCLES
+   SAVE LOCAL CACHE
 ========================================================= */
 
 function saveAllCycles(
@@ -122,9 +198,256 @@ function saveAllCycles(
   localStorage.setItem(
     CYCLES_STORAGE_KEY,
     JSON.stringify(
-      cycles
+      sortCycles(
+        cycles
+      )
     )
   );
+}
+
+/* =========================================================
+   INITIAL CLOUD HYDRATION
+   1. מעלה לענן מחזורים ישנים שחסרים שם
+   2. טוען את הענן מחדש
+   3. מעדכן את ה-cache המקומי
+========================================================= */
+
+export async function hydrateCyclesFromCloud() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return [];
+  }
+
+  const localCycles =
+    getAllCycles();
+
+  const {
+    data: cloudData,
+    error: cloudError,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .select(
+        `
+          id,
+          name,
+          battalion,
+          status,
+          start_date,
+          end_date,
+          source_cycles,
+          created_at,
+          closed_at
+        `
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false,
+        }
+      );
+
+  if (cloudError) {
+    console.error(
+      "Cycles cloud load error:",
+      cloudError
+    );
+
+    return localCycles;
+  }
+
+  const existingIds =
+    new Set(
+      (
+        (
+          cloudData ??
+          []
+        ) as CloudCycleRow[]
+      ).map(
+        (row) =>
+          row.id
+      )
+    );
+
+  const missingLocal =
+    localCycles.filter(
+      (cycle) =>
+        !existingIds.has(
+          cycle.id
+        )
+    );
+
+  /*
+    מעלים רק מחזורים מקומיים שחסרים בענן.
+    כך לא דורסים מידע שכבר עודכן ממחשב אחר.
+  */
+  for (
+    const cycle of
+    missingLocal
+  ) {
+    if (
+      cycle.status ===
+      "active"
+    ) {
+      await supabase
+        .from(
+          "commandfit_cycles"
+        )
+        .update({
+          status:
+            "closed",
+          closed_at:
+            new Date()
+              .toISOString(),
+        })
+        .eq(
+          "battalion",
+          cycle.battalion
+        )
+        .eq(
+          "status",
+          "active"
+        );
+    }
+
+    const {
+      error,
+    } =
+      await supabase
+        .from(
+          "commandfit_cycles"
+        )
+        .upsert(
+          toCloudRow(
+            cycle
+          ),
+          {
+            onConflict:
+              "id",
+          }
+        );
+
+    if (error) {
+      console.error(
+        "Legacy cycle cloud migration error:",
+        error
+      );
+    }
+  }
+
+  const {
+    data: refreshed,
+    error: refreshError,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .select(
+        `
+          id,
+          name,
+          battalion,
+          status,
+          start_date,
+          end_date,
+          source_cycles,
+          created_at,
+          closed_at
+        `
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false,
+        }
+      );
+
+  if (refreshError) {
+    console.error(
+      "Cycles cloud refresh error:",
+      refreshError
+    );
+
+    return localCycles;
+  }
+
+  const cycles =
+    (
+      (
+        refreshed ??
+        []
+      ) as CloudCycleRow[]
+    ).map(
+      fromCloudRow
+    );
+
+  saveAllCycles(
+    cycles
+  );
+
+  /*
+    אם אין בחירה מקומית לגדוד אבל יש מחזור פעיל בענן,
+    בוחרים אותו אוטומטית.
+  */
+  const activeByBattalion =
+    new Map<
+      string,
+      CourseCycle
+    >();
+
+  for (
+    const cycle of
+    cycles
+  ) {
+    if (
+      cycle.status ===
+      "active" &&
+      !activeByBattalion.has(
+        cycle.battalion
+      )
+    ) {
+      activeByBattalion.set(
+        cycle.battalion,
+        cycle
+      );
+    }
+  }
+
+  for (
+    const [
+      battalion,
+      cycle,
+    ] of
+    activeByBattalion
+  ) {
+    const localActiveId =
+      getActiveCycleId(
+        battalion
+      );
+
+    if (
+      !localActiveId ||
+      !cycles.some(
+        (item) =>
+          item.id ===
+            localActiveId &&
+          item.battalion ===
+            battalion
+      )
+    ) {
+      setActiveCycle(
+        battalion,
+        cycle.id
+      );
+    }
+  }
+
+  return cycles;
 }
 
 /* =========================================================
@@ -186,7 +509,19 @@ export function getActiveCycle(
     );
 
   if (!cycleId) {
-    return null;
+    /*
+      fallback: אם אין בחירה מקומית,
+      נחזיר את המחזור הפעיל האחרון שיש ב-cache.
+    */
+    return (
+      getCyclesByBattalion(
+        battalion
+      ).find(
+        (cycle) =>
+          cycle.status ===
+          "active"
+      ) ?? null
+    );
   }
 
   const cycle =
@@ -236,6 +571,176 @@ export function setActiveCycle(
 }
 
 /* =========================================================
+   CLOUD MUTATIONS
+========================================================= */
+
+async function createCycleInCloud(
+  cycle: CourseCycle
+) {
+  /*
+    סוגרים קודם מחזור פעיל קיים כדי לא להפר
+    את ה-unique index של מחזור פעיל אחד לגדוד.
+  */
+  const now =
+    new Date()
+      .toISOString();
+
+  const {
+    error: closeError,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .update({
+        status:
+          "closed",
+        closed_at:
+          now,
+      })
+      .eq(
+        "battalion",
+        cycle.battalion
+      )
+      .eq(
+        "status",
+        "active"
+      );
+
+  if (closeError) {
+    console.error(
+      "Close previous active cycle in cloud failed:",
+      closeError
+    );
+  }
+
+  const {
+    error,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .upsert(
+        toCloudRow(
+          cycle
+        ),
+        {
+          onConflict:
+            "id",
+        }
+      );
+
+  if (error) {
+    console.error(
+      "Create cycle in cloud failed:",
+      error
+    );
+  }
+}
+
+async function closeCycleInCloud(
+  cycle: CourseCycle
+) {
+  const {
+    error,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .update({
+        status:
+          cycle.status,
+        end_date:
+          cycle.endDate ??
+          null,
+        closed_at:
+          cycle.closedAt ??
+          null,
+      })
+      .eq(
+        "id",
+        cycle.id
+      );
+
+  if (error) {
+    console.error(
+      "Close cycle in cloud failed:",
+      error
+    );
+  }
+}
+
+async function reopenCycleInCloud(
+  cycle: CourseCycle
+) {
+  const now =
+    new Date()
+      .toISOString();
+
+  const {
+    error: closeError,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .update({
+        status:
+          "closed",
+        closed_at:
+          now,
+      })
+      .eq(
+        "battalion",
+        cycle.battalion
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .neq(
+        "id",
+        cycle.id
+      );
+
+  if (closeError) {
+    console.error(
+      "Close other active cycles in cloud failed:",
+      closeError
+    );
+  }
+
+  const {
+    error,
+  } =
+    await supabase
+      .from(
+        "commandfit_cycles"
+      )
+      .update({
+        status:
+          "active",
+        end_date:
+          null,
+        closed_at:
+          null,
+      })
+      .eq(
+        "id",
+        cycle.id
+      );
+
+  if (error) {
+    console.error(
+      "Reopen cycle in cloud failed:",
+      error
+    );
+  }
+}
+
+/* =========================================================
    CREATE CYCLE
 ========================================================= */
 
@@ -257,8 +762,8 @@ export function createCycle({
   const now =
     new Date().toISOString();
 
-  const cycle: CourseCycle =
-    {
+  const cycle:
+    CourseCycle = {
       id:
         `cycle-${battalion}-${Date.now()}`,
 
@@ -281,9 +786,6 @@ export function createCycle({
   const cycles =
     getAllCycles();
 
-  /*
-    רק מחזור פעיל אחד לכל גדוד
-  */
   const updated =
     cycles.map(
       (item) => {
@@ -319,6 +821,10 @@ export function createCycle({
   setActiveCycle(
     battalion,
     cycle.id
+  );
+
+  void createCycleInCloud(
+    cycle
   );
 
   return cycle;
@@ -389,6 +895,10 @@ export function closeCycle(
     );
   }
 
+  void closeCycleInCloud(
+    updatedCycle
+  );
+
   return updatedCycle;
 }
 
@@ -413,10 +923,6 @@ export function reopenCycle(
     return null;
   }
 
-  /*
-    סוגרים כל מחזור פעיל אחר
-    של אותו גדוד
-  */
   const updated =
     cycles.map(
       (cycle) => {
@@ -435,7 +941,8 @@ export function reopenCycle(
               "closed" as const,
 
             closedAt:
-              new Date().toISOString(),
+              new Date()
+                .toISOString(),
           };
         }
 
@@ -470,18 +977,24 @@ export function reopenCycle(
     cycleId
   );
 
-  return (
+  const reopened =
     updated.find(
       (cycle) =>
         cycle.id ===
         cycleId
-    ) ?? null
-  );
+    ) ?? null;
+
+  if (reopened) {
+    void reopenCycleInCloud(
+      reopened
+    );
+  }
+
+  return reopened;
 }
 
 /* =========================================================
    DELETE CYCLE
-   נשתמש בזה רק אם נרצה בעתיד
 ========================================================= */
 
 export function deleteCycle(
@@ -528,6 +1041,30 @@ export function deleteCycle(
     );
   }
 
+  /*
+    שמירה לעתיד בלבד — אם נשתמש במחיקה בפועל,
+    היא תימחק גם מהענן.
+  */
+  void supabase
+    .from(
+      "commandfit_cycles"
+    )
+    .delete()
+    .eq(
+      "id",
+      cycleId
+    )
+    .then(
+      ({ error }) => {
+        if (error) {
+          console.error(
+            "Delete cycle from cloud failed:",
+            error
+          );
+        }
+      }
+    );
+
   return true;
 }
 
@@ -552,7 +1089,6 @@ export function getResultsStorageKey(
 
 /* =========================================================
    LEGACY STORAGE
-   הנתונים הישנים שקיימים כרגע
 ========================================================= */
 
 export function getLegacyCadetsStorageKey(
@@ -570,7 +1106,6 @@ export function getLegacyResultsStorageKey(
 
 /* =========================================================
    MIGRATION
-   העברת הנתונים הקיימים למחזור ראשון
 ========================================================= */
 
 export function migrateLegacyDataToCycle(
@@ -585,9 +1120,6 @@ export function migrateLegacyDataToCycle(
     return;
   }
 
-  /*
-    צוערים
-  */
   const legacyCadetsKey =
     getLegacyCadetsStorageKey(
       battalion
@@ -618,9 +1150,6 @@ export function migrateLegacyDataToCycle(
     }
   }
 
-  /*
-    תוצאות
-  */
   testNames.forEach(
     (testName) => {
       const legacyKey =
@@ -707,7 +1236,8 @@ export function getCycleStatusLabel(
   status: CycleStatus
 ) {
   if (
-    status === "active"
+    status ===
+    "active"
   ) {
     return "פעיל";
   }
