@@ -781,7 +781,7 @@ _c = Home;
                 className: "mb-5",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        className: variant === "dark" ? "text-xs font-bold text-blue-700 uppercase tracking-wide" : variant === "staff" ? "text-xs font-bold text-cyan-700 uppercase tracking-wide" : "text-xs font-bold text-violet-700 uppercase tracking-wide",
+                        className: variant === "dark" ? "text-xs font-bold text-blue-700 uppercase tracking-wide" : variant === "staff" ? "text-xs font-bold text-blue-800 uppercase tracking-wide" : "text-xs font-bold text-violet-700 uppercase tracking-wide",
                         children: "מגמה"
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
@@ -841,13 +841,13 @@ _c1 = TrackSection;
     const staff = variant === "staff";
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
         href: `/battalions/${encodeURIComponent(battalion)}`,
-        className: dark ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]" : staff ? "group rounded-2xl border-2 border-cyan-200 bg-cyan-50 px-4 py-5 text-slate-900 transition hover:bg-cyan-100 hover:border-cyan-300 active:scale-[0.98]" : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]",
+        className: dark ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]" : staff ? "group rounded-2xl border-2 border-blue-700 bg-blue-950 px-4 py-5 text-white shadow-sm transition hover:bg-blue-900 hover:border-blue-500 active:scale-[0.98]" : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex items-center justify-between gap-3",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                        className: dark ? "text-2xl font-black" : "text-2xl font-black text-slate-900",
+                        className: dark || staff ? "text-2xl font-black text-white" : "text-2xl font-black text-slate-900",
                         children: battalion
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
@@ -855,7 +855,7 @@ _c1 = TrackSection;
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                        className: dark ? "text-xs text-slate-400" : "text-xs text-slate-400",
+                        className: dark ? "text-xs text-slate-400" : staff ? "text-xs text-blue-200" : "text-xs text-slate-400",
                         children: "כניסה ←"
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
@@ -875,48 +875,48 @@ _c1 = TrackSection;
                         title: "עוברים",
                         value: formatPercent(summary?.passedAverage ?? null),
                         tone: "success",
-                        dark: dark
+                        dark: dark || staff
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1207,
+                        lineNumber: 1209,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(MiniStat, {
                         title: "נכשלים",
                         value: formatPercent(summary?.failedAverage ?? null),
                         tone: "danger",
-                        dark: dark
+                        dark: dark || staff
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1221,
+                        lineNumber: 1223,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(MiniStat, {
                         title: "מצטיינים",
                         value: formatPercent(summary?.excellentAverage ?? null),
                         tone: "excellent",
-                        dark: dark
+                        dark: dark || staff
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1235,
+                        lineNumber: 1237,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1205,
+                lineNumber: 1207,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: dark ? "border-t border-white/10 mt-4 pt-4" : "border-t border-slate-100 mt-4 pt-4",
+                className: dark || staff ? "border-t border-white/15 mt-4 pt-4" : "border-t border-slate-100 mt-4 pt-4",
                 children: summary?.weakness ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: dark ? "text-xs text-slate-400" : "text-xs text-slate-500",
+                            className: dark ? "text-xs text-slate-400" : staff ? "text-xs text-blue-200" : "text-xs text-slate-500",
                             children: "מוקד לשיפור"
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 1262,
+                            lineNumber: 1264,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -927,7 +927,7 @@ _c1 = TrackSection;
                                     children: summary.weakness.label
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 1274,
+                                    lineNumber: 1278,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -935,31 +935,31 @@ _c1 = TrackSection;
                                     children: formatPercent(summary.weakness.failedPercent)
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 1281,
+                                    lineNumber: 1285,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 1272,
+                            lineNumber: 1276,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 1261,
+                    lineNumber: 1263,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                    className: dark ? "text-xs text-slate-500" : "text-xs text-slate-400",
+                    className: dark ? "text-xs text-slate-500" : staff ? "text-xs text-blue-300" : "text-xs text-slate-400",
                     children: "טרם הוזנו נתוני פרמטרים"
                 }, void 0, false, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 1293,
+                    lineNumber: 1297,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1251,
+                lineNumber: 1253,
                 columnNumber: 7
             }, this)
         ]
@@ -982,7 +982,7 @@ _c2 = BattalionCard;
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1349,
+                lineNumber: 1355,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -990,13 +990,13 @@ _c2 = BattalionCard;
                 children: value
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1359,
+                lineNumber: 1365,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 1341,
+        lineNumber: 1347,
         columnNumber: 5
     }, this);
 }
@@ -1018,7 +1018,7 @@ _c3 = MiniStat;
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1406,
+                lineNumber: 1412,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1026,13 +1026,13 @@ _c3 = MiniStat;
                 children: value
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1410,
+                lineNumber: 1416,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 1402,
+        lineNumber: 1408,
         columnNumber: 5
     }, this);
 }

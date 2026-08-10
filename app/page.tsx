@@ -1080,7 +1080,7 @@ function TrackSection({
               ? "text-xs font-bold text-blue-700 uppercase tracking-wide"
               : variant ===
                 "staff"
-              ? "text-xs font-bold text-cyan-700 uppercase tracking-wide"
+              ? "text-xs font-bold text-blue-800 uppercase tracking-wide"
               : "text-xs font-bold text-violet-700 uppercase tracking-wide"
           }
         >
@@ -1173,7 +1173,7 @@ function BattalionCard({
         dark
           ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]"
           : staff
-          ? "group rounded-2xl border-2 border-cyan-200 bg-cyan-50 px-4 py-5 text-slate-900 transition hover:bg-cyan-100 hover:border-cyan-300 active:scale-[0.98]"
+          ? "group rounded-2xl border-2 border-blue-700 bg-blue-950 px-4 py-5 text-white shadow-sm transition hover:bg-blue-900 hover:border-blue-500 active:scale-[0.98]"
           : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]"
       }
     >
@@ -1182,8 +1182,8 @@ function BattalionCard({
 
         <span
           className={
-            dark
-              ? "text-2xl font-black"
+            dark || staff
+              ? "text-2xl font-black text-white"
               : "text-2xl font-black text-slate-900"
           }
         >
@@ -1194,6 +1194,8 @@ function BattalionCard({
           className={
             dark
               ? "text-xs text-slate-400"
+              : staff
+              ? "text-xs text-blue-200"
               : "text-xs text-slate-400"
           }
         >
@@ -1214,7 +1216,7 @@ function BattalionCard({
           }
           tone="success"
           dark={
-            dark
+            dark || staff
           }
         />
 
@@ -1228,7 +1230,7 @@ function BattalionCard({
           }
           tone="danger"
           dark={
-            dark
+            dark || staff
           }
         />
 
@@ -1242,7 +1244,7 @@ function BattalionCard({
           }
           tone="excellent"
           dark={
-            dark
+            dark || staff
           }
         />
 
@@ -1250,8 +1252,8 @@ function BattalionCard({
 
       <div
         className={
-          dark
-            ? "border-t border-white/10 mt-4 pt-4"
+          dark || staff
+            ? "border-t border-white/15 mt-4 pt-4"
             : "border-t border-slate-100 mt-4 pt-4"
         }
       >
@@ -1263,6 +1265,8 @@ function BattalionCard({
               className={
                 dark
                   ? "text-xs text-slate-400"
+                  : staff
+                  ? "text-xs text-blue-200"
                   : "text-xs text-slate-500"
               }
             >
@@ -1294,6 +1298,8 @@ function BattalionCard({
             className={
               dark
                 ? "text-xs text-slate-500"
+                : staff
+                ? "text-xs text-blue-300"
                 : "text-xs text-slate-400"
             }
           >
