@@ -9,6 +9,22 @@ import { getActiveCycle, type CourseCycle } from "@/lib/cycles";
 import { useAuth } from "@/lib/use-auth";
 import { supabase } from "@/lib/supabase";
 
+type MetricValue = {
+  average?: string;
+  failedCount?: number;
+  // תאימות לנתונים ישנים שנשמרו כאחוז
+  failedPercent?: number;
+};
+
+type MetricsMap =
+  Record<string, MetricValue>;
+
+type MetricDefinition = {
+  key: string;
+  title: string;
+  failureOnly?: boolean;
+};
+
 type PercentageResult = {
   testName: string;
   attempt: number;
@@ -17,6 +33,7 @@ type PercentageResult = {
   failedPercent: number;
   excellentPercent: number;
   testDate: string;
+  metrics: MetricsMap;
 };
 
 type CloudRow = {
@@ -27,6 +44,7 @@ type CloudRow = {
   failed_percent: number | null;
   excellent_percent: number | null;
   test_date: string | null;
+  metrics: MetricsMap | null;
 };
 
 const COMPANY_COUNTS: Record<string, number> = {
@@ -59,6 +77,170 @@ function getCompanies(
 const GENERAL_COMPANY =
   "כלל הגדוד";
 
+
+const STAFF_BATTALIONS =
+  new Set([
+    "ארז",
+    "ברוש",
+    "חרוב",
+    "אלון",
+  ]);
+
+const LORAN_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+    },
+    {
+      key: "facilities",
+      title: "מתקנים",
+      failureOnly: true,
+    },
+    {
+      key: "ylm",
+      title: 'יל"מ',
+    },
+  ];
+
+const COMBAT_FITNESS_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+    },
+    {
+      key: "sprints",
+      title: "ספרינטים",
+    },
+    {
+      key: "pullups",
+      title: "מתח",
+    },
+    {
+      key: "push",
+      title:
+        "לחיצת חזה / מקבילים",
+    },
+    {
+      key: "floorLift",
+      title:
+        "הרמה מהרצפה",
+    },
+  ];
+
+const STAFF_FITNESS_METRICS:
+  MetricDefinition[] = [
+    {
+      key: "run",
+      title: "ריצה",
+    },
+    {
+      key: "pushups",
+      title:
+        "שכיבות סמיכה",
+    },
+  ];
+
+function getMetricDefinitions(
+  battalionName: string,
+  testName: string
+): MetricDefinition[] {
+  if (
+    testName.includes(
+      "לורן"
+    )
+  ) {
+    return LORAN_METRICS;
+  }
+
+  const isFitness =
+    testName.includes(
+      'כש"ג'
+    ) ||
+    testName.includes(
+      "כש״ג"
+    );
+
+  if (isFitness) {
+    return STAFF_BATTALIONS.has(
+      battalionName
+    )
+      ? STAFF_FITNESS_METRICS
+      : COMBAT_FITNESS_METRICS;
+  }
+
+  return [];
+}
+
+function formatAverage(
+  value?: string
+) {
+  const clean =
+    String(
+      value ?? ""
+    ).trim();
+
+  return clean || "אין נתון";
+}
+
+function formatMetricFailed(
+  value?: number
+) {
+  if (
+    value === undefined ||
+    value === null ||
+    Number.isNaN(value)
+  ) {
+    return "אין נתון";
+  }
+
+  return formatPercent(value);
+}
+
+function metricFailedPercent(
+  value: MetricValue | undefined,
+  testedCount: number
+) {
+  if (
+    value?.failedCount !== undefined &&
+    testedCount > 0
+  ) {
+    return percentFromCounts(
+      value.failedCount,
+      testedCount
+    );
+  }
+
+  // נתונים ישנים: אם נשמר failedPercent, עדיין נציג אותו.
+  return value?.failedPercent;
+}
+
+function formatMetricFailureSummary(
+  value: MetricValue | undefined,
+  testedCount: number
+) {
+  const percent =
+    metricFailedPercent(
+      value,
+      testedCount
+    );
+
+  if (
+    value?.failedCount === undefined
+  ) {
+    return percent === undefined
+      ? "אין נתון"
+      : formatPercent(percent);
+  }
+
+  return testedCount > 0
+    ? `${value.failedCount} (${formatPercent(
+        percent ?? null
+      )})`
+    : `${value.failedCount}`;
+}
+
 function emptyResult(
   testName: string,
   attempt = 1,
@@ -72,6 +254,7 @@ function emptyResult(
     failedPercent: 0,
     excellentPercent: 0,
     testDate: "",
+    metrics: {},
   };
 }
 
@@ -171,7 +354,7 @@ export default function PercentageResultsPage() {
 
       const { data, error } = await supabase
         .from("percentage_test_results")
-        .select("test_name,attempt,company,passed_percent,failed_percent,excellent_percent,test_date")
+        .select("test_name,attempt,company,passed_percent,failed_percent,excellent_percent,test_date,metrics")
         .eq("cycle_id", cycleId)
         .eq("battalion", battalionName)
         .eq("test_name", selectedTest.name)
@@ -203,6 +386,7 @@ export default function PercentageResultsPage() {
         failedPercent: Number(row.failed_percent ?? 100),
         excellentPercent: Number(row.excellent_percent ?? 0),
         testDate: row.test_date ?? "",
+        metrics: row.metrics ?? {},
       }));
 
       setAttempts(loaded);
@@ -303,6 +487,21 @@ export default function PercentageResultsPage() {
     result?.attempt,
   ]);
 
+  const metricDefinitions =
+    useMemo(
+      () =>
+        selectedTest
+          ? getMetricDefinitions(
+              battalionName,
+              selectedTest.name
+            )
+          : [],
+      [
+        battalionName,
+        selectedTest,
+      ]
+    );
+
   const validation = useMemo(() => {
     if (!result) return { valid: false, text: "" };
 
@@ -373,6 +572,80 @@ export default function PercentageResultsPage() {
     setMessage("");
   }
 
+  function updateMetricAverage(
+    key: string,
+    value: string
+  ) {
+    if (
+      isReadOnly ||
+      !result
+    ) {
+      return;
+    }
+
+    setResult({
+      ...result,
+      metrics: {
+        ...result.metrics,
+        [key]: {
+          ...result.metrics[
+            key
+          ],
+          average:
+            value,
+        },
+      },
+    });
+
+    setMessage("");
+  }
+
+  function updateMetricFailedCount(
+    key: string,
+    value: string
+  ) {
+    if (
+      isReadOnly ||
+      !result
+    ) {
+      return;
+    }
+
+    const clean =
+      value.trim();
+
+    const failedCount =
+      clean === ""
+        ? undefined
+        : Math.max(
+            0,
+            Math.min(
+              safeInt(tested),
+              safeInt(
+                Number(clean)
+              )
+            )
+          );
+
+    setResult({
+      ...result,
+      metrics: {
+        ...result.metrics,
+        [key]: {
+          ...result.metrics[
+            key
+          ],
+          failedCount,
+          // ברגע שמזינים כמות חדשה, לא משתמשים יותר באחוז הישן.
+          failedPercent:
+            undefined,
+        },
+      },
+    });
+
+    setMessage("");
+  }
+
   async function saveResult() {
     if (isReadOnly || !result || !selectedTest || !validation.valid) return;
 
@@ -392,6 +665,7 @@ export default function PercentageResultsPage() {
           failed_percent: result.failedPercent,
           excellent_percent: result.excellentPercent,
           test_date: result.testDate,
+          metrics: result.metrics,
           updated_at: new Date().toISOString(),
         },
         {
@@ -788,24 +1062,210 @@ export default function PercentageResultsPage() {
             )}
 
             <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
-              <h2 className="text-lg sm:text-xl font-black">
-                תוצאות שיישמרו
-              </h2>
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black">
+                    סיכום המועד – אחוזים ומרכיבי הבוחן
+                  </h2>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4">
-                <CompactPercentCard title="עברו" value={result.passedPercent} tone="success" />
-                <CompactPercentCard title="נכשלו" value={result.failedPercent} tone="danger" />
-                <CompactPercentCard title="מצטיינים" value={result.excellentPercent} tone="excellent" />
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    כל נתוני המועד מרוכזים במקום אחד: מעבר, כישלון, מצטיינים והממוצע / אחוז הכשל בכל מרכיב.
+                  </p>
+                </div>
+
+                <div className="text-sm font-bold text-slate-600">
+                  {selectedTest?.name} • {attemptLabel(result.attempt)}
+                  {result.testDate && (
+                    <span className="mr-2">
+                      •{" "}
+                      {new Date(
+                        `${result.testDate}T00:00:00`
+                      ).toLocaleDateString(
+                        "he-IL"
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
+                <CompactPercentCard
+                  title="עברו"
+                  value={result.passedPercent}
+                  tone="success"
+                />
+                <CompactPercentCard
+                  title="נכשלו"
+                  value={result.failedPercent}
+                  tone="danger"
+                />
+                <CompactPercentCard
+                  title="מצטיינים"
+                  value={result.excellentPercent}
+                  tone="excellent"
+                />
+              </div>
+
+              {metricDefinitions.length > 0 && (
+                <div className="mt-6 border-t border-slate-100 pt-6">
+                  <div>
+                    <h3 className="text-lg font-black">
+                      פירוט לפי מרכיבי הבוחן
+                    </h3>
+
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                      הזן את ממוצע המרכיב ואת מספר הנכשלים בו. אחוז הנכשלים יחושב אוטומטית מתוך מספר הניגשים במחשבון. אם אין פילוח אמיתי, השאר ריק.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                    {metricDefinitions.map(
+                      (metric) => {
+                        const value =
+                          result.metrics[
+                            metric.key
+                          ];
+
+                        return (
+                          <div
+                            key={
+                              metric.key
+                            }
+                            className="border border-slate-200 rounded-2xl p-4 bg-slate-50"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <h4 className="font-black text-lg">
+                                {metric.title}
+                              </h4>
+
+                              {(value?.failedCount !==
+                                undefined ||
+                                value?.failedPercent !==
+                                  undefined) && (
+                                <span className="bg-red-50 border border-red-100 text-red-700 rounded-lg px-2 py-1 text-xs font-black">
+                                  {formatMetricFailureSummary(
+                                    value,
+                                    safeInt(tested)
+                                  )}{" "}
+                                  נכשלים
+                                </span>
+                              )}
+                            </div>
+
+                            {!isReadOnly ? (
+                              <div
+                                className={`grid ${
+                                  metric.failureOnly
+                                    ? "grid-cols-1"
+                                    : "grid-cols-1 sm:grid-cols-2"
+                                } gap-3 mt-4`}
+                              >
+                                {!metric.failureOnly && (
+                                  <label className="bg-white border border-slate-200 rounded-xl p-3">
+                                    <span className="block text-xs font-bold text-slate-600">
+                                      ממוצע
+                                    </span>
+
+                                    <input
+                                      type="text"
+                                      value={
+                                        value?.average ??
+                                        ""
+                                      }
+                                      onChange={(
+                                        event
+                                      ) =>
+                                        updateMetricAverage(
+                                          metric.key,
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="לדוגמה 12:21 / 48 / 10"
+                                      className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 bg-white font-bold"
+                                    />
+                                  </label>
+                                )}
+
+                                <label className="bg-red-50 border border-red-100 rounded-xl p-3">
+                                  <span className="block text-xs font-bold text-red-700">
+                                    מספר נכשלים
+                                  </span>
+
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={safeInt(tested)}
+                                    step={1}
+                                    value={
+                                      value?.failedCount ??
+                                      ""
+                                    }
+                                    onChange={(
+                                      event
+                                    ) =>
+                                      updateMetricFailedCount(
+                                        metric.key,
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="לדוגמה 6"
+                                    className="w-full border border-red-200 rounded-lg px-3 py-2 mt-2 bg-white font-black text-red-700"
+                                  />
+                                </label>
+                              </div>
+                            ) : (
+                              <div
+                                className={`grid ${
+                                  metric.failureOnly
+                                    ? "grid-cols-1"
+                                    : "grid-cols-2"
+                                } gap-3 mt-4`}
+                              >
+                                {!metric.failureOnly && (
+                                  <div className="bg-white border border-slate-200 rounded-xl p-3">
+                                    <p className="text-xs text-slate-500">
+                                      ממוצע
+                                    </p>
+                                    <p className="text-xl font-black mt-1">
+                                      {formatAverage(
+                                        value?.average
+                                      )}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                                  <p className="text-xs text-red-600">
+                                    נכשלים
+                                  </p>
+                                  <p className="text-xl font-black text-red-700 mt-1">
+                                    {formatMetricFailureSummary(
+                                      value,
+                                      safeInt(tested)
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div
                 className={
-                  validation.valid && calculator.valid
-                    ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm"
-                    : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm"
+                  validation.valid &&
+                  calculator.valid
+                    ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-5 text-sm"
+                    : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-5 text-sm"
                 }
               >
-                {calculator.valid ? validation.text : "השלם הזנת כמויות תקינה לפני השמירה."}
+                {calculator.valid
+                  ? validation.text
+                  : "השלם הזנת כמויות תקינה לפני השמירה."}
               </div>
 
               {message && (
@@ -814,6 +1274,121 @@ export default function PercentageResultsPage() {
                 </div>
               )}
             </section>
+
+            {!!attempts.length && (
+              <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
+                <h2 className="text-lg sm:text-xl font-black">
+                  היסטוריית מועדים
+                </h2>
+
+                <div className="space-y-3 mt-4">
+                  {attempts.map(
+                    (attempt) => (
+                      <button
+                        key={
+                          attempt.attempt
+                        }
+                        type="button"
+                        onClick={() =>
+                          selectAttempt(
+                            attempt.attempt
+                          )
+                        }
+                        className="w-full text-right bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl p-4"
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                          <div>
+                            <p className="font-black">
+                              {attemptLabel(
+                                attempt.attempt
+                              )}
+                              {attempt.testDate && (
+                                <span className="text-slate-400 font-medium mr-2">
+                                  •{" "}
+                                  {new Date(
+                                    `${attempt.testDate}T00:00:00`
+                                  ).toLocaleDateString(
+                                    "he-IL"
+                                  )}
+                                </span>
+                              )}
+                            </p>
+
+                            <div className="flex flex-wrap gap-3 mt-2 text-sm">
+                              <span className="text-green-700 font-bold">
+                                עברו{" "}
+                                {formatPercent(
+                                  attempt.passedPercent
+                                )}
+                              </span>
+
+                              <span className="text-red-700 font-bold">
+                                נכשלו{" "}
+                                {formatPercent(
+                                  attempt.failedPercent
+                                )}
+                              </span>
+
+                              <span className="text-sky-700 font-bold">
+                                מצטיינים{" "}
+                                {formatPercent(
+                                  attempt.excellentPercent
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {metricDefinitions.length >
+                            0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {metricDefinitions.map(
+                                (metric) => {
+                                  const metricValue =
+                                    attempt.metrics[
+                                      metric.key
+                                    ];
+
+                                  return (
+                                    <span
+                                      key={
+                                        metric.key
+                                      }
+                                      className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs"
+                                    >
+                                      <strong>
+                                        {metric.title}
+                                      </strong>
+                                      {!metric.failureOnly && (
+                                        <span className="text-slate-500 mr-1">
+                                          {" "}
+                                          {formatAverage(
+                                            metricValue?.average
+                                          )}
+                                        </span>
+                                      )}
+                                      <span className="text-red-700 font-bold mr-1">
+                                        {" "}
+                                        כשל{" "}
+                                        {metricValue?.failedCount !==
+                                        undefined
+                                          ? `${metricValue.failedCount}`
+                                          : formatMetricFailed(
+                                              metricValue?.failedPercent
+                                            )}
+                                      </span>
+                                    </span>
+                                  );
+                                }
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  )}
+                </div>
+              </section>
+            )}
 
             {!isReadOnly && (
               <div className="sticky bottom-3 z-30 sm:hidden flex gap-2">

@@ -849,6 +849,161 @@ export default function TrainingPlanPage() {
       companySummary,
     ]);
 
+  const cycleTrainingSummary =
+    useMemo(() => {
+      const totalCompleted =
+        companySummary.reduce(
+          (sum, item) =>
+            sum + item.total,
+          0
+        );
+
+      const totalPlanned =
+        companySummary.reduce(
+          (sum, item) =>
+            sum + item.planned,
+          0
+        );
+
+      const overallCompletion =
+        totalPlanned > 0
+          ? Math.round(
+              totalCompleted /
+                totalPlanned *
+                100
+            )
+          : 0;
+
+      const totalByType =
+        TRAINING_TYPES.map(
+          (type) => ({
+            type,
+            count:
+              companySummary.reduce(
+                (sum, item) =>
+                  sum +
+                  (
+                    item.byType.find(
+                      (row) =>
+                        row.type ===
+                        type
+                    )?.count ??
+                    0
+                  ),
+                0
+              ),
+          })
+        ).filter(
+          (item) =>
+            item.count > 0
+        );
+
+      const weekly =
+        weeks.map(
+          (weekNumber) => {
+            const weekPlan =
+              sessions.filter(
+                (session) =>
+                  session.weekNumber ===
+                  weekNumber
+              );
+
+            const companyRows =
+              companies.map(
+                (company) => {
+                  const completedFromPlan =
+                    weekPlan.filter(
+                      (session) =>
+                        getCompanyStatus(
+                          session.id,
+                          company
+                        ) ===
+                        "completed"
+                    ).length;
+
+                  const extras =
+                    companyOnlySessions.filter(
+                      (session) =>
+                        session.company ===
+                          company &&
+                        session.weekNumber ===
+                          weekNumber
+                    );
+
+                  const completedExtras =
+                    extras.filter(
+                      (session) =>
+                        session.status ===
+                        "completed"
+                    ).length;
+
+                  const planned =
+                    weekPlan.length +
+                    extras.length;
+
+                  const completed =
+                    completedFromPlan +
+                    completedExtras;
+
+                  return {
+                    company,
+                    planned,
+                    completed,
+                    completion:
+                      planned > 0
+                        ? Math.round(
+                            completed /
+                              planned *
+                              100
+                          )
+                        : 0,
+                  };
+                }
+              );
+
+            const activeRows =
+              companyRows.filter(
+                (item) =>
+                  item.planned > 0
+              );
+
+            const averageCompletion =
+              activeRows.length > 0
+                ? Math.round(
+                    activeRows.reduce(
+                      (sum, item) =>
+                        sum +
+                        item.completion,
+                      0
+                    ) /
+                      activeRows.length
+                  )
+                : 0;
+
+            return {
+              weekNumber,
+              averageCompletion,
+              companyRows,
+            };
+          }
+        );
+
+      return {
+        totalCompleted,
+        totalPlanned,
+        overallCompletion,
+        totalByType,
+        weekly,
+      };
+    }, [
+      companySummary,
+      companies,
+      companyExecutions,
+      companyOnlySessions,
+      sessions,
+      weeks,
+    ]);
+
   async function addCompanyOnlyTraining(
     weekNumber: number
   ) {
@@ -1522,6 +1677,7 @@ export default function TrainingPlanPage() {
           compact
         />
 
+        {!isViewer && (
         <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
 
           <h2 className="text-xl font-bold">
@@ -1571,6 +1727,7 @@ export default function TrainingPlanPage() {
           </div>
 
         </section>
+        )}
 
         {message && (
           <div className="bg-blue-50 border border-blue-100 text-blue-800 rounded-2xl p-4 mb-6">
@@ -1580,6 +1737,7 @@ export default function TrainingPlanPage() {
 
         {totalWeeks > 0 && (
           <>
+            {!isViewer && (
             <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
               <h2 className="text-xl font-black">
                 תצוגת תוכנית
@@ -1619,6 +1777,7 @@ export default function TrainingPlanPage() {
                 </div>
               )}
             </section>
+            )}
 
             <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1684,6 +1843,35 @@ export default function TrainingPlanPage() {
                       </p>
                       <p className="text-sm text-amber-700 mt-1">
                         {trainingComparison.lowest?.completion ?? 0}% ביצוע
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+                    <div className="bg-slate-950 text-white rounded-2xl p-4">
+                      <p className="text-sm text-slate-300">
+                        סה״כ אימונים שבוצעו במחזור
+                      </p>
+                      <p className="text-3xl font-black mt-1">
+                        {cycleTrainingSummary.totalCompleted}
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-950 text-white rounded-2xl p-4">
+                      <p className="text-sm text-slate-300">
+                        סה״כ אימונים מתוכננים
+                      </p>
+                      <p className="text-3xl font-black mt-1">
+                        {cycleTrainingSummary.totalPlanned}
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-950 text-white rounded-2xl p-4">
+                      <p className="text-sm text-slate-300">
+                        ביצוע כולל במחזור
+                      </p>
+                      <p className="text-3xl font-black mt-1">
+                        {cycleTrainingSummary.overallCompletion}%
                       </p>
                     </div>
                   </div>
@@ -1763,10 +1951,102 @@ export default function TrainingPlanPage() {
                       </div>
                     </div>
                   )}
+
+                  {cycleTrainingSummary.totalByType.length > 0 && (
+                    <div className="mt-8 border-t border-slate-100 pt-7">
+                      <h3 className="text-lg font-black">
+                        סיכום סוגי אימון – כלל המחזור
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-1">
+                        מספר האימונים שבוצעו בפועל בכל הפלוגות יחד.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-4">
+                        {cycleTrainingSummary.totalByType.map(
+                          (item) => (
+                            <div
+                              key={item.type}
+                              className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3"
+                            >
+                              <span className="font-bold">
+                                {item.type}
+                              </span>
+                              <span className="text-2xl font-black text-blue-700">
+                                {item.count}
+                              </span>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-8 border-t border-slate-100 pt-7">
+                    <h3 className="text-lg font-black">
+                      מגמת ביצוע לאורך המחזור
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      אחוז הביצוע הממוצע של הפלוגות בכל שבוע.
+                    </p>
+
+                    <div className="space-y-3 mt-4">
+                      {cycleTrainingSummary.weekly.map(
+                        (week) => (
+                          <div
+                            key={week.weekNumber}
+                            className="border border-slate-200 rounded-2xl p-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-black">
+                                שבוע {week.weekNumber}
+                              </span>
+                              <span className="font-black text-blue-700">
+                                {week.averageCompletion}%
+                              </span>
+                            </div>
+
+                            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                              <div
+                                className="h-full bg-blue-600 rounded-full"
+                                style={{
+                                  width: `${Math.max(
+                                    0,
+                                    Math.min(
+                                      100,
+                                      week.averageCompletion
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-3">
+                              {week.companyRows.map(
+                                (item) => (
+                                  <div
+                                    key={item.company}
+                                    className="bg-slate-50 rounded-xl px-3 py-2 text-sm"
+                                  >
+                                    <p className="font-bold">
+                                      {item.company}
+                                    </p>
+                                    <p className="text-slate-500 mt-0.5">
+                                      {item.completed}/{item.planned} • {item.completion}%
+                                    </p>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
 
+            {!isViewer && (
             <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
               <h2 className="text-xl font-black">
                 סיכום ביצוע לפי פלוגות
@@ -1833,6 +2113,7 @@ export default function TrainingPlanPage() {
                 )}
               </div>
             </section>
+            )}
           </>
         )}
 
