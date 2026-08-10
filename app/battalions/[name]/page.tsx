@@ -71,6 +71,17 @@ type TestCardData = {
     PercentageResult[];
 };
 
+
+
+type AiAnalysis = {
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  trends: string[];
+  recommendations: string[];
+  commanderMessage: string;
+};
+
 /* =========================================================
    CONFIG
 ========================================================= */
@@ -240,6 +251,21 @@ export default function BattalionPage() {
     useState(
       ""
     );
+
+  const [
+    aiLoading,
+    setAiLoading,
+  ] = useState(false);
+
+  const [
+    aiError,
+    setAiError,
+  ] = useState("");
+
+  const [
+    aiAnalysis,
+    setAiAnalysis,
+  ] = useState<AiAnalysis | null>(null);
 
   const cycleId =
     activeCycle?.id ??
@@ -530,6 +556,98 @@ export default function BattalionPage() {
     );
 
 
+  const aiMetrics =
+    useMemo(() => {
+      const result: Record<
+        string,
+        {
+          average?: string;
+          failedPercent: number;
+        }
+      > = {};
+
+      for (const item of latestResults) {
+        result[item.testName] = {
+          failedPercent:
+            item.failedPercent,
+        };
+      }
+
+      return result;
+    }, [latestResults]);
+
+  async function runAiAnalysis() {
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/analysis",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                track:
+                  `${track} – גדוד ${battalionName}`,
+
+                overall: {
+                  passedPercent:
+                    averagePassed ?? 0,
+
+                  failedPercent:
+                    averageFailed ?? 0,
+
+                  excellentPercent:
+                    averageExcellent ?? 0,
+                },
+
+                metrics:
+                  aiMetrics,
+              }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.ok
+      ) {
+        throw new Error(
+          data?.message ??
+            "ניתוח AI נכשל"
+        );
+      }
+
+      setAiAnalysis(
+        data.analysis as
+          AiAnalysis
+      );
+    } catch (error) {
+      console.error(
+        "Battalion AI analysis error:",
+        error
+      );
+
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "אירעה שגיאה בניתוח AI"
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+
   /* =======================================================
      NOT FOUND
   ======================================================= */
@@ -763,6 +881,127 @@ export default function BattalionPage() {
             }
             tone="excellent"
           />
+
+        </section>
+
+        {/* =================================================
+            COMMANDER AI
+        ================================================= */}
+
+        <section className="bg-gradient-to-l from-indigo-950 to-slate-900 text-white rounded-3xl shadow-sm p-5 sm:p-7 mb-8">
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+
+            <div>
+
+              <p className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+                CommandFit AI
+              </p>
+
+              <h2 className="text-2xl font-black mt-1">
+                ✨ AI למפקד גדוד {battalionName}
+              </h2>
+
+              <p className="text-slate-300 mt-2 max-w-3xl">
+                ניתוח ממוקד של נתוני גדוד {battalionName} בלבד — אחוזי מעבר, כישלון והצטיינות, מגמות בין הבחנים ומוקדי התערבות למפקד.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={
+                runAiAnalysis
+              }
+              disabled={
+                aiLoading ||
+                latestResults.length === 0
+              }
+              className="w-full lg:w-auto bg-white text-slate-950 hover:bg-indigo-50 rounded-xl px-6 py-3 font-black disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {aiLoading
+                ? "מנתח את נתוני הגדוד..."
+                : aiAnalysis
+                ? "🔄 ניתוח מחדש"
+                : "✨ נתח את הגדוד באמצעות AI"}
+            </button>
+
+          </div>
+
+          {aiError && (
+            <div className="bg-red-500/10 border border-red-400/20 text-red-100 rounded-xl p-4 mt-5">
+              {aiError}
+            </div>
+          )}
+
+          {!aiAnalysis &&
+            !aiError && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mt-5 text-slate-300 text-sm">
+              לחץ על „נתח את הגדוד באמצעות AI” לקבלת תמונת מצב, חוזקות, מוקדי חולשה, מגמות והמלצות לפעולה המבוססות על הנתונים של גדוד {battalionName}.
+            </div>
+          )}
+
+          {aiAnalysis && (
+            <div className="mt-6 space-y-4">
+
+              <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
+                <p className="text-xs text-indigo-200 font-bold">
+                  תמונת מצב גדודית
+                </p>
+
+                <p className="text-lg font-bold mt-2 leading-8">
+                  {aiAnalysis.summary}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <BattalionAiListCard
+                  title="חוזקות"
+                  items={
+                    aiAnalysis.strengths
+                  }
+                  icon="✅"
+                />
+
+                <BattalionAiListCard
+                  title="מוקדי חולשה"
+                  items={
+                    aiAnalysis.weaknesses
+                  }
+                  icon="⚠️"
+                />
+
+                <BattalionAiListCard
+                  title="מגמות"
+                  items={
+                    aiAnalysis.trends
+                  }
+                  icon="📈"
+                />
+
+                <BattalionAiListCard
+                  title="המלצות לפעולה"
+                  items={
+                    aiAnalysis.recommendations
+                  }
+                  icon="🎯"
+                />
+
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-300/20 rounded-2xl p-5">
+                <p className="text-xs text-indigo-200 font-bold">
+                  מסר למפקד גדוד {battalionName}
+                </p>
+
+                <p className="mt-2 font-bold leading-7">
+                  {aiAnalysis.commanderMessage}
+                </p>
+              </div>
+
+            </div>
+          )}
 
         </section>
 
@@ -1036,6 +1275,51 @@ export default function BattalionPage() {
 /* =========================================================
    COMPONENTS
 ========================================================= */
+
+function BattalionAiListCard({
+  title,
+  items,
+  icon,
+}: {
+  title: string;
+  items: string[];
+  icon: string;
+}) {
+  return (
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
+
+      <p className="font-black">
+        {icon} {title}
+      </p>
+
+      {items.length > 0 ? (
+        <ul className="space-y-2 mt-3 text-sm text-slate-200">
+
+          {items.map(
+            (
+              item,
+              index
+            ) => (
+              <li
+                key={`${title}-${index}`}
+                className="leading-6"
+              >
+                • {item}
+              </li>
+            )
+          )}
+
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-400 mt-3">
+          אין מספיק נתונים.
+        </p>
+      )}
+
+    </div>
+  );
+}
+
 
 function TestProgressChart({
   testName,
