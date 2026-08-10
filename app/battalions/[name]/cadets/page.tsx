@@ -30,7 +30,7 @@ function emptyResult(testName: string, attempt = 1): PercentageResult {
     testName,
     attempt,
     passedPercent: 0,
-    failedPercent: 100,
+    failedPercent: 0,
     excellentPercent: 0,
   };
 }
@@ -43,6 +43,16 @@ function clampPercent(value: string) {
 
 function formatPercent(value: number) {
   return `${Math.round(value * 10) / 10}%`;
+}
+
+function safeInt(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.round(value));
+}
+
+function percentFromCounts(part: number, total: number) {
+  if (total <= 0) return 0;
+  return Math.round((part / total) * 1000) / 10;
 }
 
 function attemptLabel(attempt: number) {
@@ -69,6 +79,15 @@ export default function PercentageResultsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [openingStrength, setOpeningStrength] = useState(0);
+  const [currentStrength, setCurrentStrength] = useState(0);
+  const [tested, setTested] = useState(0);
+  const [passedCount, setPassedCount] = useState(0);
+  const [excellentCount, setExcellentCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
+  const [dismissedCount, setDismissedCount] = useState(0);
+  const [previousCumulativePassed, setPreviousCumulativePassed] = useState(0);
 
   const cycleId = activeCycle?.id ?? `legacy-${battalionName}`;
   const isReadOnly = isViewer || activeCycle?.status === "closed";
@@ -145,6 +164,68 @@ export default function PercentageResultsPage() {
       cancelled = true;
     };
   }, [battalionName, cycleId, selectedTest]);
+
+  const calculator = useMemo(() => {
+    const opening = safeInt(openingStrength);
+    const current = safeInt(currentStrength);
+    const testedNow = safeInt(tested);
+    const passedNow = safeInt(passedCount);
+    const excellentNow = safeInt(excellentCount);
+    const absentNow = safeInt(absentCount);
+    const dismissedNow = safeInt(dismissedCount);
+    const previousPassed = safeInt(previousCumulativePassed);
+
+    const failedNow = Math.max(0, testedNow - passedNow);
+    const cumulativePassed = previousPassed + passedNow;
+
+    const passPercent = percentFromCounts(passedNow, testedNow);
+    const failPercent = percentFromCounts(failedNow, testedNow);
+    const excellentPercent = percentFromCounts(excellentNow, testedNow);
+    const remainingPercent = percentFromCounts(current, opening);
+    const cumulativePassPercent = percentFromCounts(cumulativePassed, opening);
+
+    const valid =
+      testedNow > 0 &&
+      passedNow <= testedNow &&
+      excellentNow <= passedNow &&
+      current <= opening &&
+      testedNow + absentNow <= current &&
+      dismissedNow <= opening &&
+      cumulativePassed <= opening;
+
+    return {
+      failedNow,
+      cumulativePassed,
+      passPercent,
+      failPercent,
+      excellentPercent,
+      remainingPercent,
+      cumulativePassPercent,
+      valid,
+    };
+  }, [
+    openingStrength,
+    currentStrength,
+    tested,
+    passedCount,
+    excellentCount,
+    absentCount,
+    dismissedCount,
+    previousCumulativePassed,
+  ]);
+
+  function applyCalculator() {
+    if (isReadOnly || !result || !calculator.valid) return;
+
+    setResult({
+      ...result,
+      passedPercent: calculator.passPercent,
+      failedPercent: calculator.failPercent,
+      excellentPercent: calculator.excellentPercent,
+    });
+
+    setMessage("החישוב הועבר לשדות האחוזים ומוכן לשמירה.");
+  }
 
   const validation = useMemo(() => {
     if (!result) return { valid: false, text: "" };
@@ -339,79 +420,220 @@ export default function PercentageResultsPage() {
 
         {result && (
           <>
-            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
-              <p className="text-sm text-slate-500">מועד נבחר</p>
-              <h2 className="text-2xl font-bold mt-1">
-                {selectedTest?.name} • {attemptLabel(result.attempt)}
-              </h2>
-            </section>
+            <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4 sticky top-0 z-20 border border-slate-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs text-slate-500">מועד נבחר</p>
+                  <h2 className="text-lg sm:text-xl font-black mt-1">
+                    {selectedTest?.name} • {attemptLabel(result.attempt)}
+                  </h2>
+                </div>
 
-            <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <PercentInput
-                title="אחוז עברו"
-                value={result.passedPercent}
-                disabled={isReadOnly}
-                onChange={updatePassed}
-                helper="אחוז הנכשלים יחושב אוטומטית."
-              />
-
-              <ReadOnlyPercent
-                title="אחוז נכשלו"
-                value={result.failedPercent}
-                helper="מחושב אוטומטית כ־100% פחות אחוז העוברים."
-              />
-
-              <PercentInput
-                title="אחוז מצטיינים"
-                value={result.excellentPercent}
-                disabled={isReadOnly}
-                onChange={updateExcellent}
-                helper="המצטיינים הם חלק מהעוברים."
-              />
-            </section>
-
-            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-7 mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold">תמונת מצב</h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                <SummaryCard title="עברו" value={result.passedPercent} tone="success" />
-                <SummaryCard title="נכשלו" value={result.failedPercent} tone="danger" />
-                <SummaryCard title="מצטיינים" value={result.excellentPercent} tone="excellent" />
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    disabled={saving || !validation.valid}
+                    onClick={saveResult}
+                    className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
+                  >
+                    {saving ? "שומר..." : "💾 שמירת תוצאות המועד"}
+                  </button>
+                )}
               </div>
             </section>
 
-            <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+            <details className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4">
+              <summary className="font-black text-blue-900 cursor-pointer">
+                💡 איך מזינים נכון?
+              </summary>
+              <div className="text-sm text-blue-800 leading-7 mt-3">
+                <p>במועד א׳ מזינים את כל מי שניגשו בפועל לבוחן.</p>
+                <p>במועד ב׳/ג׳ מזינים רק את מי שניגשו לאותו מועד חוזר.</p>
+                <p>אין צורך להזין נכשלים — המערכת מחשבת ניגשו פחות עברו.</p>
+                <p>מצטיינים חייבים להיות חלק מתוך העוברים.</p>
+                <p>מצבה נוכחית היא המצבה הפעילה בשלב הנוכחי בקורס.</p>
+              </div>
+            </details>
+
+            {!isReadOnly && (
+              <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black">
+                    🧮 מחשבון פנימי להזנה
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    הזן כמויות בלבד. האחוזים יחושבו אוטומטית.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
+                  <CompactNumberField title="מצבת פתיחה" value={openingStrength} onChange={setOpeningStrength} />
+                  <CompactNumberField title="מצבה נוכחית" value={currentStrength} onChange={setCurrentStrength} />
+                  <CompactNumberField title="ניגשו" value={tested} onChange={setTested} />
+                  <CompactNumberField title="עברו" value={passedCount} onChange={setPassedCount} />
+                  <CompactNumberField title="מצטיינים" value={excellentCount} onChange={setExcellentCount} />
+                  <CompactNumberField title="לא ניגשו" value={absentCount} onChange={setAbsentCount} />
+                  <CompactNumberField title="מודחים / עזבו" value={dismissedCount} onChange={setDismissedCount} />
+                  <CompactNumberField title="עברו קודם" value={previousCumulativePassed} onChange={setPreviousCumulativePassed} />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4">
+                  <CompactResultCard title="עברו" value={formatPercent(calculator.passPercent)} tone="success" />
+                  <CompactResultCard title="נכשלו" value={formatPercent(calculator.failPercent)} tone="danger" />
+                  <CompactResultCard title="מצטיינים" value={formatPercent(calculator.excellentPercent)} tone="excellent" />
+                  <CompactResultCard title="נותרו במחזור" value={openingStrength > 0 ? formatPercent(calculator.remainingPercent) : "—"} tone="neutral" />
+                  <CompactResultCard title="מעבר מצטבר" value={openingStrength > 0 ? formatPercent(calculator.cumulativePassPercent) : "—"} tone="neutral" />
+                </div>
+
+                <div
+                  className={
+                    calculator.valid
+                      ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm font-bold"
+                      : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm font-bold"
+                  }
+                >
+                  {calculator.valid
+                    ? `✅ החישוב תקין. נכשלו במועד: ${calculator.failedNow}`
+                    : "⚠️ כדי להעביר את החישוב, ודא שיש ניגשים ושהכמויות מסתדרות."}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!calculator.valid}
+                  onClick={applyCalculator}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-3 font-black mt-4 disabled:opacity-40"
+                >
+                  העבר את התוצאות להזנת האחוזים
+                </button>
+              </section>
+            )}
+
+            <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
+              <h2 className="text-lg sm:text-xl font-black">
+                אחוזים לשמירה
+              </h2>
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4">
+                <CompactPercentCard title="עברו" value={result.passedPercent} tone="success" />
+                <CompactPercentCard title="נכשלו" value={result.failedPercent} tone="danger" />
+                <CompactPercentCard title="מצטיינים" value={result.excellentPercent} tone="excellent" />
+              </div>
+
               <div
                 className={
                   validation.valid
-                    ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-4"
-                    : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4"
+                    ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm"
+                    : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm"
                 }
               >
                 {validation.text}
               </div>
 
               {message && (
-                <div className="bg-blue-50 border border-blue-100 text-blue-700 rounded-xl p-4 mt-4">
+                <div className="bg-blue-50 border border-blue-100 text-blue-700 rounded-xl p-3 mt-3 text-sm">
                   {message}
                 </div>
               )}
+            </section>
 
-              {!isReadOnly && (
+            {!isReadOnly && (
+              <div className="sticky bottom-3 z-30 sm:hidden">
                 <button
                   type="button"
                   disabled={saving || !validation.valid}
                   onClick={saveResult}
-                  className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 py-3 font-bold mt-5 disabled:opacity-40"
+                  className="w-full bg-slate-950 text-white rounded-2xl px-5 py-4 font-black shadow-xl disabled:opacity-40"
                 >
-                  {saving ? "שומר..." : "שמירת האחוזים"}
+                  {saving ? "שומר..." : "💾 שמירת תוצאות המועד"}
                 </button>
-              )}
-            </section>
+              </div>
+            )}
           </>
         )}
       </div>
     </main>
+  );
+}
+
+function CompactNumberField({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+      <span className="block text-[11px] sm:text-xs font-bold text-slate-600">
+        {title}
+      </span>
+
+      <input
+        type="number"
+        min={0}
+        step={1}
+        value={value}
+        onChange={(event) =>
+          onChange(
+            safeInt(
+              Number(event.target.value)
+            )
+          )
+        }
+        className="w-full border border-slate-300 rounded-lg px-2 py-2 mt-2 text-xl sm:text-2xl font-black bg-white text-center"
+      />
+    </label>
+  );
+}
+
+function CompactResultCard({
+  title,
+  value,
+  tone,
+}: {
+  title: string;
+  value: string;
+  tone: "success" | "danger" | "excellent" | "neutral";
+}) {
+  const styles = {
+    success: "bg-green-50 border-green-100 text-green-700",
+    danger: "bg-red-50 border-red-100 text-red-700",
+    excellent: "bg-sky-50 border-sky-100 text-sky-700",
+    neutral: "bg-slate-50 border-slate-200 text-slate-800",
+  };
+
+  return (
+    <div className={`border rounded-xl p-3 text-center ${styles[tone]}`}>
+      <p className="text-[10px] sm:text-xs font-bold">{title}</p>
+      <p className="text-xl sm:text-2xl font-black mt-1">{value}</p>
+    </div>
+  );
+}
+
+function CompactPercentCard({
+  title,
+  value,
+  tone,
+}: {
+  title: string;
+  value: number;
+  tone: "success" | "danger" | "excellent";
+}) {
+  const styles = {
+    success: "bg-green-50 border-green-100 text-green-700",
+    danger: "bg-red-50 border-red-100 text-red-700",
+    excellent: "bg-sky-50 border-sky-100 text-sky-700",
+  };
+
+  return (
+    <div className={`border rounded-xl p-3 text-center ${styles[tone]}`}>
+      <p className="text-[10px] sm:text-xs font-bold">{title}</p>
+      <p className="text-2xl sm:text-3xl font-black mt-1">
+        {formatPercent(value)}
+      </p>
+    </div>
   );
 }
 
