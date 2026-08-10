@@ -36,24 +36,26 @@ type MetricsMap =
 
 type PercentageResult = {
   attempt: number;
-
   passedPercent: number;
   failedPercent: number;
   excellentPercent: number;
-
+  averageTime: string;
+  averageShooting: number | null;
+  remainingCohortPercent: number;
+  cumulativePassPercent: number;
   metrics: MetricsMap;
 };
 
 type CloudPercentageRow = {
   attempt: number | null;
-
   passed_percent: number | null;
   failed_percent: number | null;
   excellent_percent: number | null;
-
-  metrics:
-    | MetricsMap
-    | null;
+  average_time: string | null;
+  average_shooting: number | null;
+  remaining_cohort_percent: number | null;
+  cumulative_pass_percent: number | null;
+  metrics: MetricsMap | null;
 };
 
 type MetricDefinition = {
@@ -253,6 +255,53 @@ function formatPercent(
   }%`;
 }
 
+function roundOne(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function calculateCumulativePass(
+  attempts: PercentageResult[],
+  currentAttempt: number,
+  currentPassedPercent: number
+) {
+  const previous = attempts
+    .filter((item) => item.attempt < currentAttempt)
+    .sort((a, b) => b.attempt - a.attempt)[0];
+
+  const previousCumulative =
+    previous?.cumulativePassPercent ?? 0;
+
+  return roundOne(
+    previousCumulative +
+      (100 - previousCumulative) *
+        (currentPassedPercent / 100)
+  );
+}
+
+function cohortAdjustedPassIndex(
+  cumulativePassPercent: number,
+  remainingCohortPercent: number
+) {
+  return roundOne(
+    (cumulativePassPercent * remainingCohortPercent) / 100
+  );
+}
+
+function showAverageTime(testName: string) {
+  return (
+    testName.includes("לורן") ||
+    testName.includes('כש"ג') ||
+    testName.includes("כש״ג")
+  );
+}
+
+function showAverageShooting(testName: string) {
+  return (
+    testName.includes("לורן") ||
+    testName.includes("ירי")
+  );
+}
+
 function getMetricDefinitions(
   battalionName: string,
   testName: string
@@ -366,6 +415,10 @@ function createEmptyResult(
     passedPercent: 0,
     failedPercent: 100,
     excellentPercent: 0,
+    averageTime: "",
+    averageShooting: null,
+    remainingCohortPercent: 100,
+    cumulativePassPercent: 0,
 
     metrics:
       createEmptyMetrics(
@@ -522,6 +575,10 @@ export default function TestPage() {
               passed_percent,
               failed_percent,
               excellent_percent,
+              average_time,
+              average_shooting,
+              remaining_cohort_percent,
+              cumulative_pass_percent,
               metrics
             `
           )
@@ -613,6 +670,24 @@ export default function TestPage() {
             excellentPercent:
               Number(
                 row.excellent_percent ??
+                0
+              ),
+
+            averageTime:
+              String(row.average_time ?? ""),
+
+            averageShooting:
+              row.average_shooting === null
+                ? null
+                : Math.round(Number(row.average_shooting)),
+
+            remainingCohortPercent:
+              Number(row.remaining_cohort_percent ?? 100),
+
+            cumulativePassPercent:
+              Number(
+                row.cumulative_pass_percent ??
+                row.passed_percent ??
                 0
               ),
 
@@ -741,21 +816,25 @@ export default function TestPage() {
           10
       ) / 10;
 
+    const cumulative =
+      calculateCumulativePass(
+        attempts,
+        result.attempt,
+        passed
+      );
+
     setResult(
       (current) => ({
         ...current,
-
-        passedPercent:
-          passed,
-
-        failedPercent:
-          failed,
-
+        passedPercent: passed,
+        failedPercent: failed,
         excellentPercent:
           Math.min(
             current.excellentPercent,
             passed
           ),
+        cumulativePassPercent:
+          cumulative,
       })
     );
   }
@@ -779,6 +858,46 @@ export default function TestPage() {
           ),
       })
     );
+  }
+
+  function updateAverageTime(value: string) {
+    if (isReadOnly) return;
+
+    setResult((current) => ({
+      ...current,
+      averageTime: value,
+    }));
+  }
+
+  function updateAverageShooting(value: string) {
+    if (isReadOnly) return;
+
+    const parsed = Number(value);
+
+    setResult((current) => ({
+      ...current,
+      averageShooting:
+        value === ""
+          ? null
+          : Math.max(
+              0,
+              Math.round(
+                Number.isFinite(parsed)
+                  ? parsed
+                  : 0
+              )
+            ),
+    }));
+  }
+
+  function updateRemainingCohort(value: string) {
+    if (isReadOnly) return;
+
+    setResult((current) => ({
+      ...current,
+      remainingCohortPercent:
+        clampPercent(value),
+    }));
   }
 
   /* =======================================================
@@ -970,6 +1089,18 @@ export default function TestPage() {
             excellent_percent:
               result.excellentPercent,
 
+            average_time:
+              result.averageTime || null,
+
+            average_shooting:
+              result.averageShooting,
+
+            remaining_cohort_percent:
+              result.remainingCohortPercent,
+
+            cumulative_pass_percent:
+              result.cumulativePassPercent,
+
             metrics:
               result.metrics,
 
@@ -1141,7 +1272,7 @@ await publishNotification({
           </p>
 
           <p className="text-sm text-blue-800 mt-1">
-            אין שמות, כמויות או תוצאות אישיות. כל נתוני הכשל נשמרים באחוזים בלבד.
+            אין שמות, כמויות או תוצאות אישיות. נתוני האוכלוסייה נשמרים באחוזים בלבד.
           </p>
 
         </section>
@@ -1274,6 +1405,116 @@ await publishNotification({
               }
             />
 
+          </div>
+
+        </section>
+
+        {/* AGGREGATE DATA */}
+
+        <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-6">
+
+          <h2 className="text-xl sm:text-2xl font-bold">
+            ממוצעים והתקדמות
+          </h2>
+
+          <p className="text-slate-500 mt-1">
+            נתונים מצרפיים בלבד — ללא שמות וללא כמות נבחנים.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
+
+            {showAverageTime(testName) && (
+              <label className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <span className="block text-sm font-bold">
+                  זמן ממוצע
+                </span>
+
+                <input
+                  type="text"
+                  disabled={isReadOnly}
+                  value={result.averageTime}
+                  onChange={(event) =>
+                    updateAverageTime(event.target.value)
+                  }
+                  placeholder="לדוגמה 18:42"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 mt-3 text-xl font-bold bg-white"
+                />
+              </label>
+            )}
+
+            {showAverageShooting(testName) && (
+              <label className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <span className="block text-sm font-bold">
+                  ממוצע ירי
+                </span>
+
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  disabled={isReadOnly}
+                  value={result.averageShooting ?? ""}
+                  onChange={(event) =>
+                    updateAverageShooting(event.target.value)
+                  }
+                  placeholder="מספר שלם"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 mt-3 text-xl font-bold bg-white"
+                />
+
+                <span className="block text-xs text-slate-500 mt-2">
+                  מספר שלם, ללא סימן %.
+                </span>
+              </label>
+            )}
+
+            <label className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+              <span className="block text-sm font-bold">
+                % שנותרו במחזור
+              </span>
+
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                disabled={isReadOnly}
+                value={result.remainingCohortPercent}
+                onChange={(event) =>
+                  updateRemainingCohort(event.target.value)
+                }
+                className="w-full border border-slate-300 rounded-xl px-4 py-3 mt-3 text-xl font-bold bg-white"
+              />
+            </label>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+              <p className="text-sm font-bold text-blue-800">
+                מעבר מצטבר בבוחן
+              </p>
+
+              <p className="text-3xl font-black text-blue-900 mt-3">
+                {formatPercent(result.cumulativePassPercent)}
+              </p>
+            </div>
+
+          </div>
+
+          <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 mt-4">
+            <p className="text-sm font-bold text-violet-900">
+              מדד מעבר ביחס למחזור המקורי
+            </p>
+
+            <p className="text-2xl font-black text-violet-900 mt-1">
+              {formatPercent(
+                cohortAdjustedPassIndex(
+                  result.cumulativePassPercent,
+                  result.remainingCohortPercent
+                )
+              )}
+            </p>
+
+            <p className="text-xs text-violet-700 mt-2">
+              מדד משוקלל שמביא בחשבון את אחוז הנותרים במחזור.
+            </p>
           </div>
 
         </section>
