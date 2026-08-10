@@ -31,24 +31,23 @@ import NotificationsPanel from "@/components/NotificationsPanel";
    TYPES
 ========================================================= */
 
+type TrainingStatus =
+  | "planned"
+  | "completed"
+  | "not_completed";
+
 type TrainingSession = {
   id: number;
-
   weekNumber: number;
-
   trainingType: string;
-
-  completed: boolean;
+  status: TrainingStatus;
 };
 
 type CloudTrainingSession = {
   id: number;
-
   week_number: number;
-
   training_type: string;
-
-  completed: boolean;
+  status: TrainingStatus;
 };
 
 /* =========================================================
@@ -258,7 +257,7 @@ export default function TrainingPlanPage() {
               id,
               week_number,
               training_type,
-              completed
+              status
             `
           )
           .eq(
@@ -318,8 +317,8 @@ export default function TrainingPlanPage() {
             trainingType:
               row.training_type,
 
-            completed:
-              row.completed,
+            status:
+              row.status ?? "planned",
           })
         )
       );
@@ -600,15 +599,15 @@ export default function TrainingPlanPage() {
           training_type:
             trainingType,
 
-          completed:
-            false,
+          status:
+            "planned",
         })
         .select(
           `
             id,
             week_number,
             training_type,
-            completed
+            status
           `
         )
         .single();
@@ -638,8 +637,8 @@ export default function TrainingPlanPage() {
         trainingType:
           data.training_type,
 
-        completed:
-          data.completed,
+        status:
+          data.status ?? "planned",
       };
 
     const nextSessions =
@@ -693,85 +692,63 @@ export default function TrainingPlanPage() {
      COMPLETE
   ======================================================= */
 
-  async function setCompleted(
-    session:
-      TrainingSession,
-    completed: boolean
+  async function setStatus(
+    session: TrainingSession,
+    status: TrainingStatus
   ) {
     if (readOnly) {
       return;
     }
 
-    const {
-      error,
-    } =
+    const { error } =
       await supabase
-        .from(
-          "commandfit_training_sessions"
-        )
+        .from("commandfit_training_sessions")
         .update({
-          completed,
-
-          updated_at:
-            new Date()
-              .toISOString(),
+          status,
+          updated_at: new Date().toISOString(),
         })
-        .eq(
-          "id",
-          session.id
-        );
+        .eq("id", session.id);
 
     if (error) {
       setMessage(
         `עדכון האימון נכשל: ${error.message}`
       );
-
       return;
     }
 
-    setSessions(
-      (current) =>
-        current.map(
-          (item) =>
-            item.id ===
-            session.id
-              ? {
-                  ...item,
-                  completed,
-                }
-              : item
-        )
+    setSessions((current) =>
+      current.map((item) =>
+        item.id === session.id
+          ? { ...item, status }
+          : item
+      )
     );
+
+    const statusText =
+      status === "completed"
+        ? "בוצע"
+        : status === "not_completed"
+        ? "לא בוצע"
+        : "טרם סומן";
 
     await publishNotification({
       cycleId,
-
-      battalion:
-        battalionName,
-
-      eventType:
-        "training_update",
-
+      battalion: battalionName,
+      eventType: "training_update",
       severity:
-        completed
+        status === "completed"
           ? "success"
+          : status === "not_completed"
+          ? "warning"
           : "info",
-
       title:
         `גדוד ${battalionName} – שבוע ${session.weekNumber}`,
-
       message:
-        `${session.trainingType} סומן כ־${
-          completed
-            ? "בוצע"
-            : "לא בוצע"
-        }.`,
-
+        `${session.trainingType} סומן כ־${statusText}.`,
       href:
         `/battalions/${encodeURIComponent(
           battalionName
         )}/training-plan#week-${session.weekNumber}`,
-
       dedupeKey:
         `training-status:${cycleId}:${battalionName}:session-${session.id}`,
     });
@@ -787,7 +764,8 @@ export default function TrainingPlanPage() {
   ) {
     if (
       readOnly ||
-      session.completed
+      session.status ===
+        "completed"
     ) {
       return;
     }
@@ -976,7 +954,8 @@ export default function TrainingPlanPage() {
                 const completed =
                   weekSessions.filter(
                     (session) =>
-                      session.completed
+                      session.status ===
+                      "completed"
                   ).length;
 
                 const completion =
@@ -1175,14 +1154,18 @@ export default function TrainingPlanPage() {
 
                                 <p
                                   className={
-                                    session.completed
+                                    session.status === "completed"
                                       ? "text-green-700 font-bold text-sm mt-1"
+                                      : session.status === "not_completed"
+                                      ? "text-red-700 font-bold text-sm mt-1"
                                       : "text-slate-400 text-sm mt-1"
                                   }
                                 >
-                                  {session.completed
+                                  {session.status === "completed"
                                     ? "✅ בוצע"
-                                    : "טרם בוצע"}
+                                    : session.status === "not_completed"
+                                    ? "❌ לא בוצע"
+                                    : "טרם סומן"}
                                 </p>
 
                               </div>
@@ -1193,13 +1176,13 @@ export default function TrainingPlanPage() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setCompleted(
+                                      setStatus(
                                         session,
-                                        true
+                                        "completed"
                                       )
                                     }
                                     className={
-                                      session.completed
+                                      session.status === "completed"
                                         ? "bg-green-600 text-white rounded-xl px-4 py-2 font-bold"
                                         : "bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-2 font-bold"
                                     }
@@ -1210,9 +1193,9 @@ export default function TrainingPlanPage() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setCompleted(
+                                      setStatus(
                                         session,
-                                        false
+                                        "not_completed"
                                       )
                                     }
                                     className="bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-2 font-bold"
@@ -1220,7 +1203,7 @@ export default function TrainingPlanPage() {
                                     ❌ לא בוצע
                                   </button>
 
-                                  {!session.completed && (
+                                  {session.status !== "completed" && (
                                     <button
                                       type="button"
                                       onClick={() =>
