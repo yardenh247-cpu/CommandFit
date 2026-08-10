@@ -41,7 +41,8 @@ function clampPercent(value: string) {
   return Math.min(100, Math.max(0, Math.round(n * 10) / 10));
 }
 
-function formatPercent(value: number) {
+function formatPercent(value: number | null) {
+  if (value === null || Number.isNaN(value)) return "—";
   return `${Math.round(value * 10) / 10}%`;
 }
 
@@ -51,7 +52,7 @@ function safeInt(value: number) {
 }
 
 function percentFromCounts(part: number, total: number) {
-  if (total <= 0) return 0;
+  if (total <= 0) return null;
   return Math.round((part / total) * 1000) / 10;
 }
 
@@ -178,13 +179,16 @@ export default function PercentageResultsPage() {
     const failedNow = Math.max(0, testedNow - passedNow);
     const cumulativePassed = previousPassed + passedNow;
 
-    const passPercent = percentFromCounts(passedNow, testedNow);
-    const failPercent = percentFromCounts(failedNow, testedNow);
-    const excellentPercent = percentFromCounts(excellentNow, testedNow);
-    const remainingPercent = percentFromCounts(current, opening);
-    const cumulativePassPercent = percentFromCounts(cumulativePassed, opening);
+    const attendancePercent = percentFromCounts(testedNow, current);
+    const passOfTestedPercent = percentFromCounts(passedNow, testedNow);
+    const failOfTestedPercent = percentFromCounts(failedNow, testedNow);
+    const excellentOfTestedPercent = percentFromCounts(excellentNow, testedNow);
+    const remainingCohortPercent = percentFromCounts(current, opening);
+    const cumulativePassOfOpeningPercent = percentFromCounts(cumulativePassed, opening);
 
     const valid =
+      opening > 0 &&
+      current > 0 &&
       testedNow > 0 &&
       passedNow <= testedNow &&
       excellentNow <= passedNow &&
@@ -196,11 +200,12 @@ export default function PercentageResultsPage() {
     return {
       failedNow,
       cumulativePassed,
-      passPercent,
-      failPercent,
-      excellentPercent,
-      remainingPercent,
-      cumulativePassPercent,
+      attendancePercent,
+      passOfTestedPercent,
+      failOfTestedPercent,
+      excellentOfTestedPercent,
+      remainingCohortPercent,
+      cumulativePassOfOpeningPercent,
       valid,
     };
   }, [
@@ -214,18 +219,26 @@ export default function PercentageResultsPage() {
     previousCumulativePassed,
   ]);
 
-  function applyCalculator() {
-    if (isReadOnly || !result || !calculator.valid) return;
+  useEffect(() => {
+    if (isReadOnly || !result) return;
 
-    setResult({
-      ...result,
-      passedPercent: calculator.passPercent,
-      failedPercent: calculator.failPercent,
-      excellentPercent: calculator.excellentPercent,
+    setResult((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        passedPercent: calculator.passOfTestedPercent ?? 0,
+        failedPercent: calculator.failOfTestedPercent ?? 0,
+        excellentPercent: calculator.excellentOfTestedPercent ?? 0,
+      };
     });
-
-    setMessage("החישוב הועבר לשדות האחוזים ומוכן לשמירה.");
-  }
+  }, [
+    calculator.passOfTestedPercent,
+    calculator.failOfTestedPercent,
+    calculator.excellentOfTestedPercent,
+    isReadOnly,
+    result?.attempt,
+  ]);
 
   const validation = useMemo(() => {
     if (!result) return { valid: false, text: "" };
@@ -432,7 +445,7 @@ export default function PercentageResultsPage() {
                 {!isReadOnly && (
                   <button
                     type="button"
-                    disabled={saving || !validation.valid}
+                    disabled={saving || !validation.valid || !calculator.valid}
                     onClick={saveResult}
                     className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40"
                   >
@@ -449,7 +462,7 @@ export default function PercentageResultsPage() {
               <div className="text-sm text-blue-800 leading-7 mt-3">
                 <p>במועד א׳ מזינים את כל מי שניגשו בפועל לבוחן.</p>
                 <p>במועד ב׳/ג׳ מזינים רק את מי שניגשו לאותו מועד חוזר.</p>
-                <p>אין צורך להזין נכשלים — המערכת מחשבת ניגשו פחות עברו.</p>
+                <p>אין להזין נכשלים — המערכת מחשבת ניגשו פחות עברו.</p>
                 <p>מצטיינים חייבים להיות חלק מתוך העוברים.</p>
                 <p>מצבה נוכחית היא המצבה הפעילה בשלב הנוכחי בקורס.</p>
               </div>
@@ -459,10 +472,10 @@ export default function PercentageResultsPage() {
               <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
                 <div>
                   <h2 className="text-lg sm:text-xl font-black">
-                    🧮 מחשבון פנימי להזנה
+                    🧮 הזנת כמויות
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                    הזן כמויות בלבד. האחוזים יחושבו אוטומטית.
+                    האחוזים מחושבים ומתעדכנים אוטומטית בזמן ההזנה.
                   </p>
                 </div>
 
@@ -477,12 +490,13 @@ export default function PercentageResultsPage() {
                   <CompactNumberField title="עברו קודם" value={previousCumulativePassed} onChange={setPreviousCumulativePassed} />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4">
-                  <CompactResultCard title="עברו" value={formatPercent(calculator.passPercent)} tone="success" />
-                  <CompactResultCard title="נכשלו" value={formatPercent(calculator.failPercent)} tone="danger" />
-                  <CompactResultCard title="מצטיינים" value={formatPercent(calculator.excellentPercent)} tone="excellent" />
-                  <CompactResultCard title="נותרו במחזור" value={openingStrength > 0 ? formatPercent(calculator.remainingPercent) : "—"} tone="neutral" />
-                  <CompactResultCard title="מעבר מצטבר" value={openingStrength > 0 ? formatPercent(calculator.cumulativePassPercent) : "—"} tone="neutral" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mt-4">
+                  <CompactResultCard title="% ניגשו מהמצבה" value={formatPercent(calculator.attendancePercent)} tone="neutral" />
+                  <CompactResultCard title="% עברו מהניגשים" value={formatPercent(calculator.passOfTestedPercent)} tone="success" />
+                  <CompactResultCard title="% נכשלו מהניגשים" value={formatPercent(calculator.failOfTestedPercent)} tone="danger" />
+                  <CompactResultCard title="% מצטיינים מהניגשים" value={formatPercent(calculator.excellentOfTestedPercent)} tone="excellent" />
+                  <CompactResultCard title="% שנותרו במחזור" value={formatPercent(calculator.remainingCohortPercent)} tone="neutral" />
+                  <CompactResultCard title="% מעבר מצטבר מהפתיחה" value={formatPercent(calculator.cumulativePassOfOpeningPercent)} tone="neutral" />
                 </div>
 
                 <div
@@ -494,23 +508,14 @@ export default function PercentageResultsPage() {
                 >
                   {calculator.valid
                     ? `✅ החישוב תקין. נכשלו במועד: ${calculator.failedNow}`
-                    : "⚠️ כדי להעביר את החישוב, ודא שיש ניגשים ושהכמויות מסתדרות."}
+                    : "⚠️ ודא שיש מצבת פתיחה, מצבה נוכחית וניגשים, ושכל הכמויות מסתדרות."}
                 </div>
-
-                <button
-                  type="button"
-                  disabled={!calculator.valid}
-                  onClick={applyCalculator}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-3 font-black mt-4 disabled:opacity-40"
-                >
-                  העבר את התוצאות להזנת האחוזים
-                </button>
               </section>
             )}
 
             <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-5 mb-4">
               <h2 className="text-lg sm:text-xl font-black">
-                אחוזים לשמירה
+                תוצאות שיישמרו
               </h2>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4">
@@ -521,12 +526,12 @@ export default function PercentageResultsPage() {
 
               <div
                 className={
-                  validation.valid
+                  validation.valid && calculator.valid
                     ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm"
                     : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm"
                 }
               >
-                {validation.text}
+                {calculator.valid ? validation.text : "השלם הזנת כמויות תקינה לפני השמירה."}
               </div>
 
               {message && (
@@ -540,7 +545,7 @@ export default function PercentageResultsPage() {
               <div className="sticky bottom-3 z-30 sm:hidden">
                 <button
                   type="button"
-                  disabled={saving || !validation.valid}
+                  disabled={saving || !validation.valid || !calculator.valid}
                   onClick={saveResult}
                   className="w-full bg-slate-950 text-white rounded-2xl px-5 py-4 font-black shadow-xl disabled:opacity-40"
                 >
@@ -576,11 +581,7 @@ function CompactNumberField({
         step={1}
         value={value}
         onChange={(event) =>
-          onChange(
-            safeInt(
-              Number(event.target.value)
-            )
-          )
+          onChange(safeInt(Number(event.target.value)))
         }
         className="w-full border border-slate-300 rounded-lg px-2 py-2 mt-2 text-xl sm:text-2xl font-black bg-white text-center"
       />
@@ -606,7 +607,7 @@ function CompactResultCard({
 
   return (
     <div className={`border rounded-xl p-3 text-center ${styles[tone]}`}>
-      <p className="text-[10px] sm:text-xs font-bold">{title}</p>
+      <p className="text-[10px] sm:text-xs font-bold leading-4">{title}</p>
       <p className="text-xl sm:text-2xl font-black mt-1">{value}</p>
     </div>
   );

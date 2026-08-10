@@ -39,6 +39,7 @@ function clampPercent(value) {
     return Math.min(100, Math.max(0, Math.round(n * 10) / 10));
 }
 function formatPercent(value) {
+    if (value === null || Number.isNaN(value)) return "—";
     return `${Math.round(value * 10) / 10}%`;
 }
 function safeInt(value) {
@@ -46,7 +47,7 @@ function safeInt(value) {
     return Math.max(0, Math.round(value));
 }
 function percentFromCounts(part, total) {
-    if (total <= 0) return 0;
+    if (total <= 0) return null;
     return Math.round(part / total * 1000) / 10;
 }
 function attemptLabel(attempt) {
@@ -170,20 +171,22 @@ function PercentageResultsPage() {
             const previousPassed = safeInt(previousCumulativePassed);
             const failedNow = Math.max(0, testedNow - passedNow);
             const cumulativePassed = previousPassed + passedNow;
-            const passPercent = percentFromCounts(passedNow, testedNow);
-            const failPercent = percentFromCounts(failedNow, testedNow);
-            const excellentPercent = percentFromCounts(excellentNow, testedNow);
-            const remainingPercent = percentFromCounts(current, opening);
-            const cumulativePassPercent = percentFromCounts(cumulativePassed, opening);
-            const valid = testedNow > 0 && passedNow <= testedNow && excellentNow <= passedNow && current <= opening && testedNow + absentNow <= current && dismissedNow <= opening && cumulativePassed <= opening;
+            const attendancePercent = percentFromCounts(testedNow, current);
+            const passOfTestedPercent = percentFromCounts(passedNow, testedNow);
+            const failOfTestedPercent = percentFromCounts(failedNow, testedNow);
+            const excellentOfTestedPercent = percentFromCounts(excellentNow, testedNow);
+            const remainingCohortPercent = percentFromCounts(current, opening);
+            const cumulativePassOfOpeningPercent = percentFromCounts(cumulativePassed, opening);
+            const valid = opening > 0 && current > 0 && testedNow > 0 && passedNow <= testedNow && excellentNow <= passedNow && current <= opening && testedNow + absentNow <= current && dismissedNow <= opening && cumulativePassed <= opening;
             return {
                 failedNow,
                 cumulativePassed,
-                passPercent,
-                failPercent,
-                excellentPercent,
-                remainingPercent,
-                cumulativePassPercent,
+                attendancePercent,
+                passOfTestedPercent,
+                failOfTestedPercent,
+                excellentOfTestedPercent,
+                remainingCohortPercent,
+                cumulativePassOfOpeningPercent,
                 valid
             };
         }
@@ -197,16 +200,28 @@ function PercentageResultsPage() {
         dismissedCount,
         previousCumulativePassed
     ]);
-    function applyCalculator() {
-        if (isReadOnly || !result || !calculator.valid) return;
-        setResult({
-            ...result,
-            passedPercent: calculator.passPercent,
-            failedPercent: calculator.failPercent,
-            excellentPercent: calculator.excellentPercent
-        });
-        setMessage("החישוב הועבר לשדות האחוזים ומוכן לשמירה.");
-    }
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "PercentageResultsPage.useEffect": ()=>{
+            if (isReadOnly || !result) return;
+            setResult({
+                "PercentageResultsPage.useEffect": (current)=>{
+                    if (!current) return current;
+                    return {
+                        ...current,
+                        passedPercent: calculator.passOfTestedPercent ?? 0,
+                        failedPercent: calculator.failOfTestedPercent ?? 0,
+                        excellentPercent: calculator.excellentOfTestedPercent ?? 0
+                    };
+                }
+            }["PercentageResultsPage.useEffect"]);
+        }
+    }["PercentageResultsPage.useEffect"], [
+        calculator.passOfTestedPercent,
+        calculator.failOfTestedPercent,
+        calculator.excellentOfTestedPercent,
+        isReadOnly,
+        result?.attempt
+    ]);
     const validation = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
         "PercentageResultsPage.useMemo[validation]": ()=>{
             if (!result) return {
@@ -310,12 +325,12 @@ function PercentageResultsPage() {
                 children: "טוען נתוני ביצוע..."
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 333,
+                lineNumber: 346,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-            lineNumber: 332,
+            lineNumber: 345,
             columnNumber: 7
         }, this);
     }
@@ -335,7 +350,7 @@ function PercentageResultsPage() {
                                     children: "CommandFit"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                    lineNumber: 345,
+                                    lineNumber: 358,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -346,7 +361,7 @@ function PercentageResultsPage() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                    lineNumber: 346,
+                                    lineNumber: 359,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -354,13 +369,13 @@ function PercentageResultsPage() {
                                     children: "ללא שמות צוערים וללא נתוני כוח אדם מספריים"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                    lineNumber: 349,
+                                    lineNumber: 362,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                            lineNumber: 344,
+                            lineNumber: 357,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -369,18 +384,18 @@ function PercentageResultsPage() {
                             children: "חזרה לגדוד"
                         }, void 0, false, {
                             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                            lineNumber: 354,
+                            lineNumber: 367,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                    lineNumber: 343,
+                    lineNumber: 356,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 342,
+                lineNumber: 355,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -394,7 +409,7 @@ function PercentageResultsPage() {
                                 children: "🔒 תצוגה מצרפית בלבד"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 365,
+                                lineNumber: 378,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -402,13 +417,13 @@ function PercentageResultsPage() {
                                 children: "נשמרים אחוזי ביצוע בלבד. אין אפשרות להזין שמות, מספרי צוערים או מספר נבחנים."
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 366,
+                                lineNumber: 379,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                        lineNumber: 364,
+                        lineNumber: 377,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -425,7 +440,7 @@ function PercentageResultsPage() {
                                                 children: "בוחן"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 374,
+                                                lineNumber: 387,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -440,18 +455,18 @@ function PercentageResultsPage() {
                                                         children: test.name
                                                     }, test.id, false, {
                                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                        lineNumber: 384,
+                                                        lineNumber: 397,
                                                         columnNumber: 19
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 375,
+                                                lineNumber: 388,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 373,
+                                        lineNumber: 386,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -462,13 +477,13 @@ function PercentageResultsPage() {
                                         children: "+ מועד נוסף"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 391,
+                                        lineNumber: 404,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 372,
+                                lineNumber: 385,
                                 columnNumber: 11
                             }, this),
                             !!attempts.length && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -480,18 +495,18 @@ function PercentageResultsPage() {
                                         children: attemptLabel(item.attempt)
                                     }, item.attempt, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 404,
+                                        lineNumber: 417,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 402,
+                                lineNumber: 415,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                        lineNumber: 371,
+                        lineNumber: 384,
                         columnNumber: 9
                     }, this),
                     result && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -508,7 +523,7 @@ function PercentageResultsPage() {
                                                     children: "מועד נבחר"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                    lineNumber: 426,
+                                                    lineNumber: 439,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -520,35 +535,35 @@ function PercentageResultsPage() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                    lineNumber: 427,
+                                                    lineNumber: 440,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                            lineNumber: 425,
+                                            lineNumber: 438,
                                             columnNumber: 17
                                         }, this),
                                         !isReadOnly && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             type: "button",
-                                            disabled: saving || !validation.valid,
+                                            disabled: saving || !validation.valid || !calculator.valid,
                                             onClick: saveResult,
                                             className: "bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-3 font-bold disabled:opacity-40",
                                             children: saving ? "שומר..." : "💾 שמירת תוצאות המועד"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                            lineNumber: 433,
+                                            lineNumber: 446,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                    lineNumber: 424,
+                                    lineNumber: 437,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 423,
+                                lineNumber: 436,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("details", {
@@ -559,7 +574,7 @@ function PercentageResultsPage() {
                                         children: "💡 איך מזינים נכון?"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 446,
+                                        lineNumber: 459,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -569,47 +584,47 @@ function PercentageResultsPage() {
                                                 children: "במועד א׳ מזינים את כל מי שניגשו בפועל לבוחן."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 450,
+                                                lineNumber: 463,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 children: "במועד ב׳/ג׳ מזינים רק את מי שניגשו לאותו מועד חוזר."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 451,
+                                                lineNumber: 464,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                children: "אין צורך להזין נכשלים — המערכת מחשבת ניגשו פחות עברו."
+                                                children: "אין להזין נכשלים — המערכת מחשבת ניגשו פחות עברו."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 452,
+                                                lineNumber: 465,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 children: "מצטיינים חייבים להיות חלק מתוך העוברים."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 453,
+                                                lineNumber: 466,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 children: "מצבה נוכחית היא המצבה הפעילה בשלב הנוכחי בקורס."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 454,
+                                                lineNumber: 467,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 449,
+                                        lineNumber: 462,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 445,
+                                lineNumber: 458,
                                 columnNumber: 13
                             }, this),
                             !isReadOnly && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -619,24 +634,24 @@ function PercentageResultsPage() {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                                 className: "text-lg sm:text-xl font-black",
-                                                children: "🧮 מחשבון פנימי להזנה"
+                                                children: "🧮 הזנת כמויות"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 461,
+                                                lineNumber: 474,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 className: "text-xs sm:text-sm text-slate-500 mt-1",
-                                                children: "הזן כמויות בלבד. האחוזים יחושבו אוטומטית."
+                                                children: "האחוזים מחושבים ומתעדכנים אוטומטית בזמן ההזנה."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 464,
+                                                lineNumber: 477,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 460,
+                                        lineNumber: 473,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -648,7 +663,7 @@ function PercentageResultsPage() {
                                                 onChange: setOpeningStrength
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 470,
+                                                lineNumber: 483,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -657,7 +672,7 @@ function PercentageResultsPage() {
                                                 onChange: setCurrentStrength
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 471,
+                                                lineNumber: 484,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -666,7 +681,7 @@ function PercentageResultsPage() {
                                                 onChange: setTested
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 472,
+                                                lineNumber: 485,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -675,7 +690,7 @@ function PercentageResultsPage() {
                                                 onChange: setPassedCount
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 473,
+                                                lineNumber: 486,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -684,7 +699,7 @@ function PercentageResultsPage() {
                                                 onChange: setExcellentCount
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 474,
+                                                lineNumber: 487,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -693,7 +708,7 @@ function PercentageResultsPage() {
                                                 onChange: setAbsentCount
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 475,
+                                                lineNumber: 488,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -702,7 +717,7 @@ function PercentageResultsPage() {
                                                 onChange: setDismissedCount
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 476,
+                                                lineNumber: 489,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactNumberField, {
@@ -711,92 +726,90 @@ function PercentageResultsPage() {
                                                 onChange: setPreviousCumulativePassed
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 477,
+                                                lineNumber: 490,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 469,
+                                        lineNumber: 482,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4",
+                                        className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mt-4",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
-                                                title: "עברו",
-                                                value: formatPercent(calculator.passPercent),
+                                                title: "% ניגשו מהמצבה",
+                                                value: formatPercent(calculator.attendancePercent),
+                                                tone: "neutral"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
+                                                lineNumber: 494,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
+                                                title: "% עברו מהניגשים",
+                                                value: formatPercent(calculator.passOfTestedPercent),
                                                 tone: "success"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 481,
+                                                lineNumber: 495,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
-                                                title: "נכשלו",
-                                                value: formatPercent(calculator.failPercent),
+                                                title: "% נכשלו מהניגשים",
+                                                value: formatPercent(calculator.failOfTestedPercent),
                                                 tone: "danger"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 482,
+                                                lineNumber: 496,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
-                                                title: "מצטיינים",
-                                                value: formatPercent(calculator.excellentPercent),
+                                                title: "% מצטיינים מהניגשים",
+                                                value: formatPercent(calculator.excellentOfTestedPercent),
                                                 tone: "excellent"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 483,
+                                                lineNumber: 497,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
-                                                title: "נותרו במחזור",
-                                                value: openingStrength > 0 ? formatPercent(calculator.remainingPercent) : "—",
+                                                title: "% שנותרו במחזור",
+                                                value: formatPercent(calculator.remainingCohortPercent),
                                                 tone: "neutral"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 484,
+                                                lineNumber: 498,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactResultCard, {
-                                                title: "מעבר מצטבר",
-                                                value: openingStrength > 0 ? formatPercent(calculator.cumulativePassPercent) : "—",
+                                                title: "% מעבר מצטבר מהפתיחה",
+                                                value: formatPercent(calculator.cumulativePassOfOpeningPercent),
                                                 tone: "neutral"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 485,
+                                                lineNumber: 499,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 480,
+                                        lineNumber: 493,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: calculator.valid ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm font-bold" : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm font-bold",
-                                        children: calculator.valid ? `✅ החישוב תקין. נכשלו במועד: ${calculator.failedNow}` : "⚠️ כדי להעביר את החישוב, ודא שיש ניגשים ושהכמויות מסתדרות."
+                                        children: calculator.valid ? `✅ החישוב תקין. נכשלו במועד: ${calculator.failedNow}` : "⚠️ ודא שיש מצבת פתיחה, מצבה נוכחית וניגשים, ושכל הכמויות מסתדרות."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 488,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        type: "button",
-                                        disabled: !calculator.valid,
-                                        onClick: applyCalculator,
-                                        className: "w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-3 font-black mt-4 disabled:opacity-40",
-                                        children: "העבר את התוצאות להזנת האחוזים"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 500,
+                                        lineNumber: 502,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 459,
+                                lineNumber: 472,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -804,10 +817,10 @@ function PercentageResultsPage() {
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                         className: "text-lg sm:text-xl font-black",
-                                        children: "אחוזים לשמירה"
+                                        children: "תוצאות שיישמרו"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 512,
+                                        lineNumber: 517,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -819,7 +832,7 @@ function PercentageResultsPage() {
                                                 tone: "success"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 517,
+                                                lineNumber: 522,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactPercentCard, {
@@ -828,7 +841,7 @@ function PercentageResultsPage() {
                                                 tone: "danger"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 518,
+                                                lineNumber: 523,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CompactPercentCard, {
@@ -837,21 +850,21 @@ function PercentageResultsPage() {
                                                 tone: "excellent"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                                lineNumber: 519,
+                                                lineNumber: 524,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 516,
+                                        lineNumber: 521,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: validation.valid ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm" : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm",
-                                        children: validation.text
+                                        className: validation.valid && calculator.valid ? "bg-green-50 border border-green-100 text-green-700 rounded-xl p-3 mt-4 text-sm" : "bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mt-4 text-sm",
+                                        children: calculator.valid ? validation.text : "השלם הזנת כמויות תקינה לפני השמירה."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 522,
+                                        lineNumber: 527,
                                         columnNumber: 15
                                     }, this),
                                     message && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -859,53 +872,53 @@ function PercentageResultsPage() {
                                         children: message
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                        lineNumber: 533,
+                                        lineNumber: 538,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 511,
+                                lineNumber: 516,
                                 columnNumber: 13
                             }, this),
                             !isReadOnly && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "sticky bottom-3 z-30 sm:hidden",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     type: "button",
-                                    disabled: saving || !validation.valid,
+                                    disabled: saving || !validation.valid || !calculator.valid,
                                     onClick: saveResult,
                                     className: "w-full bg-slate-950 text-white rounded-2xl px-5 py-4 font-black shadow-xl disabled:opacity-40",
                                     children: saving ? "שומר..." : "💾 שמירת תוצאות המועד"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                    lineNumber: 541,
+                                    lineNumber: 546,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                                lineNumber: 540,
+                                lineNumber: 545,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                        lineNumber: 422,
+                        lineNumber: 435,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 363,
+                lineNumber: 376,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 341,
+        lineNumber: 354,
         columnNumber: 5
     }, this);
 }
-_s(PercentageResultsPage, "N+effVbkR6BZgMvaGA3RQeBysEw=", false, function() {
+_s(PercentageResultsPage, "hIAWm9sbZ51ir3ZpRC7OsL/PiHQ=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useParams"]
@@ -921,7 +934,7 @@ function CompactNumberField({ title, value, onChange }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 569,
+                lineNumber: 574,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -933,13 +946,13 @@ function CompactNumberField({ title, value, onChange }) {
                 className: "w-full border border-slate-300 rounded-lg px-2 py-2 mt-2 text-xl sm:text-2xl font-black bg-white text-center"
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 573,
+                lineNumber: 578,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 568,
+        lineNumber: 573,
         columnNumber: 5
     }, this);
 }
@@ -955,11 +968,11 @@ function CompactResultCard({ title, value, tone }) {
         className: `border rounded-xl p-3 text-center ${styles[tone]}`,
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                className: "text-[10px] sm:text-xs font-bold",
+                className: "text-[10px] sm:text-xs font-bold leading-4",
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 609,
+                lineNumber: 610,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -967,13 +980,13 @@ function CompactResultCard({ title, value, tone }) {
                 children: value
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 610,
+                lineNumber: 611,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 608,
+        lineNumber: 609,
         columnNumber: 5
     }, this);
 }
@@ -992,7 +1005,7 @@ function CompactPercentCard({ title, value, tone }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 632,
+                lineNumber: 633,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1000,13 +1013,13 @@ function CompactPercentCard({ title, value, tone }) {
                 children: formatPercent(value)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 633,
+                lineNumber: 634,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 631,
+        lineNumber: 632,
         columnNumber: 5
     }, this);
 }
@@ -1020,7 +1033,7 @@ function PercentInput({ title, value, disabled, onChange, helper }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 655,
+                lineNumber: 656,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1037,7 +1050,7 @@ function PercentInput({ title, value, disabled, onChange, helper }) {
                         className: "w-full border border-slate-300 rounded-xl pr-4 pl-12 py-3 text-2xl font-bold text-slate-900 bg-white disabled:bg-slate-50"
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                        lineNumber: 657,
+                        lineNumber: 658,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1045,13 +1058,13 @@ function PercentInput({ title, value, disabled, onChange, helper }) {
                         children: "%"
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                        lineNumber: 667,
+                        lineNumber: 668,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 656,
+                lineNumber: 657,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1059,13 +1072,13 @@ function PercentInput({ title, value, disabled, onChange, helper }) {
                 children: helper
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 669,
+                lineNumber: 670,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 654,
+        lineNumber: 655,
         columnNumber: 5
     }, this);
 }
@@ -1079,7 +1092,7 @@ function ReadOnlyPercent({ title, value, helper }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 685,
+                lineNumber: 686,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1087,7 +1100,7 @@ function ReadOnlyPercent({ title, value, helper }) {
                 children: formatPercent(value)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 686,
+                lineNumber: 687,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1095,13 +1108,13 @@ function ReadOnlyPercent({ title, value, helper }) {
                 children: helper
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 687,
+                lineNumber: 688,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 684,
+        lineNumber: 685,
         columnNumber: 5
     }, this);
 }
@@ -1120,7 +1133,7 @@ function SummaryCard({ title, value, tone }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 709,
+                lineNumber: 710,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1128,13 +1141,13 @@ function SummaryCard({ title, value, tone }) {
                 children: formatPercent(value)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-                lineNumber: 710,
+                lineNumber: 711,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/cadets/page.tsx",
-        lineNumber: 708,
+        lineNumber: 709,
         columnNumber: 5
     }, this);
 }
