@@ -42,6 +42,10 @@ type PercentageRow = {
     | number
     | null;
 
+  company:
+    | string
+    | null;
+
   passed_percent:
     | number
     | null;
@@ -358,6 +362,7 @@ export default function BattalionPage() {
             `
               test_name,
               attempt,
+              company,
               passed_percent,
               failed_percent,
               excellent_percent,
@@ -371,6 +376,10 @@ export default function BattalionPage() {
           .eq(
             "battalion",
             battalionName
+          )
+          .eq(
+            "company",
+            "כלל הגדוד"
           )
           .order(
             "test_name",

@@ -126,11 +126,12 @@ function BattalionPage() {
                 const { data, error } = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from("percentage_test_results").select(`
               test_name,
               attempt,
+              company,
               passed_percent,
               failed_percent,
               excellent_percent,
               metrics
-            `).eq("cycle_id", cycleId).eq("battalion", battalionName).order("test_name", {
+            `).eq("cycle_id", cycleId).eq("battalion", battalionName).eq("company", "כלל הגדוד").order("test_name", {
                     ascending: true
                 }).order("attempt", {
                     ascending: true
@@ -397,7 +398,7 @@ function BattalionPage() {
                         children: "גדוד לא נמצא"
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 996,
+                        lineNumber: 1005,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -410,7 +411,7 @@ function BattalionPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1000,
+                        lineNumber: 1009,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -419,18 +420,18 @@ function BattalionPage() {
                         children: "חזרה לדף הבית"
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1006,
+                        lineNumber: 1015,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 994,
+                lineNumber: 1003,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/battalions/[name]/page.tsx",
-            lineNumber: 990,
+            lineNumber: 999,
             columnNumber: 7
         }, this);
     }
@@ -445,12 +446,12 @@ function BattalionPage() {
                 children: "טוען נתוני אחוזים..."
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1030,
+                lineNumber: 1039,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/battalions/[name]/page.tsx",
-            lineNumber: 1026,
+            lineNumber: 1035,
             columnNumber: 7
         }, this);
     }
@@ -472,7 +473,7 @@ function BattalionPage() {
                                     children: track
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1057,
+                                    lineNumber: 1066,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -484,7 +485,7 @@ function BattalionPage() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1061,
+                                    lineNumber: 1070,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -499,13 +500,13 @@ function BattalionPage() {
                                                     children: activeCycle?.name ?? "נתונים קיימים"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                    lineNumber: 1070,
+                                                    lineNumber: 1079,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                                            lineNumber: 1068,
+                                            lineNumber: 1077,
                                             columnNumber: 15
                                         }, this),
                                         activeCycle && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -513,13 +514,13 @@ function BattalionPage() {
                                             children: activeCycle.status === "closed" ? "🔒 מחזור סגור" : "● מחזור פעיל"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                                            lineNumber: 1077,
+                                            lineNumber: 1086,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1066,
+                                    lineNumber: 1075,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -527,13 +528,13 @@ function BattalionPage() {
                                     children: "CommandFit – תמונת מצב מצרפית באחוזים בלבד"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1094,
+                                    lineNumber: 1103,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                            lineNumber: 1055,
+                            lineNumber: 1064,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -545,7 +546,7 @@ function BattalionPage() {
                                     children: "📈 הזנת אחוזים"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1107,
+                                    lineNumber: 1116,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -554,7 +555,7 @@ function BattalionPage() {
                                     children: "📊 סיכום באחוזים"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1116,
+                                    lineNumber: 1125,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -563,7 +564,7 @@ function BattalionPage() {
                                     children: "📅 תוכנית אימונים"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1125,
+                                    lineNumber: 1134,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -572,24 +573,24 @@ function BattalionPage() {
                                     children: "חזרה לדף הבית"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 1134,
+                                    lineNumber: 1143,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                            lineNumber: 1105,
+                            lineNumber: 1114,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                    lineNumber: 1053,
+                    lineNumber: 1062,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1051,
+                lineNumber: 1060,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -603,7 +604,7 @@ function BattalionPage() {
                                 children: "🔒 נתונים מצרפיים בלבד"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1155,
+                                lineNumber: 1164,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -611,13 +612,13 @@ function BattalionPage() {
                                 children: "במסך זה לא מוצגים שמות, מספרי צוערים, מספר נבחנים או תיק אישי. כל הנתונים מוצגים באחוזים בלבד."
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1159,
+                                lineNumber: 1168,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1153,
+                        lineNumber: 1162,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$NotificationsPanel$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -625,7 +626,7 @@ function BattalionPage() {
                         compact: true
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1172,
+                        lineNumber: 1181,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -637,7 +638,7 @@ function BattalionPage() {
                                 tone: "success"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1185,
+                                lineNumber: 1194,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PercentKpi, {
@@ -646,7 +647,7 @@ function BattalionPage() {
                                 tone: "danger"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1195,
+                                lineNumber: 1204,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PercentKpi, {
@@ -655,13 +656,13 @@ function BattalionPage() {
                                 tone: "excellent"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1205,
+                                lineNumber: 1214,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1183,
+                        lineNumber: 1192,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -674,7 +675,7 @@ function BattalionPage() {
                                 tone: "danger"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1223,
+                                lineNumber: 1232,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CommanderInsightCard, {
@@ -684,7 +685,7 @@ function BattalionPage() {
                                 tone: "success"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1246,
+                                lineNumber: 1255,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CommanderInsightCard, {
@@ -694,7 +695,7 @@ function BattalionPage() {
                                 tone: "info"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1269,
+                                lineNumber: 1278,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CommanderInsightCard, {
@@ -704,13 +705,13 @@ function BattalionPage() {
                                 tone: "warning"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1292,
+                                lineNumber: 1301,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1221,
+                        lineNumber: 1230,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -726,7 +727,7 @@ function BattalionPage() {
                                                 children: "CommandFit AI"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1327,
+                                                lineNumber: 1336,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -737,7 +738,7 @@ function BattalionPage() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1331,
+                                                lineNumber: 1340,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -749,13 +750,13 @@ function BattalionPage() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1335,
+                                                lineNumber: 1344,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1325,
+                                        lineNumber: 1334,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -766,13 +767,13 @@ function BattalionPage() {
                                         children: aiLoading ? "מנתח את נתוני הגדוד..." : aiAnalysis ? "🔄 ניתוח מחדש" : "✨ נתח את הגדוד באמצעות AI"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1341,
+                                        lineNumber: 1350,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1323,
+                                lineNumber: 1332,
                                 columnNumber: 11
                             }, this),
                             aiError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -780,7 +781,7 @@ function BattalionPage() {
                                 children: aiError
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1362,
+                                lineNumber: 1371,
                                 columnNumber: 13
                             }, this),
                             !aiAnalysis && !aiError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -792,7 +793,7 @@ function BattalionPage() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1369,
+                                lineNumber: 1378,
                                 columnNumber: 13
                             }, this),
                             aiAnalysis && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -806,7 +807,7 @@ function BattalionPage() {
                                                 children: "תמונת מצב גדודית"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1378,
+                                                lineNumber: 1387,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -814,13 +815,13 @@ function BattalionPage() {
                                                 children: aiAnalysis.summary
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1382,
+                                                lineNumber: 1391,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1377,
+                                        lineNumber: 1386,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -832,7 +833,7 @@ function BattalionPage() {
                                                 icon: "✅"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1389,
+                                                lineNumber: 1398,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(BattalionAiListCard, {
@@ -841,7 +842,7 @@ function BattalionPage() {
                                                 icon: "⚠️"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1397,
+                                                lineNumber: 1406,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(BattalionAiListCard, {
@@ -850,7 +851,7 @@ function BattalionPage() {
                                                 icon: "📈"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1405,
+                                                lineNumber: 1414,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(BattalionAiListCard, {
@@ -859,13 +860,13 @@ function BattalionPage() {
                                                 icon: "🎯"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1413,
+                                                lineNumber: 1422,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1387,
+                                        lineNumber: 1396,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -879,7 +880,7 @@ function BattalionPage() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1424,
+                                                lineNumber: 1433,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -887,25 +888,25 @@ function BattalionPage() {
                                                 children: aiAnalysis.commanderMessage
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1428,
+                                                lineNumber: 1437,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1423,
+                                        lineNumber: 1432,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1375,
+                                lineNumber: 1384,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1321,
+                        lineNumber: 1330,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -918,7 +919,7 @@ function BattalionPage() {
                                         children: "תמונת מצב גדודית"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1446,
+                                        lineNumber: 1455,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -926,13 +927,13 @@ function BattalionPage() {
                                         children: "התקדמות בכל בוחן בנפרד לפי מועדים — אחוזי עוברים, נכשלים ומצטיינים."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1450,
+                                        lineNumber: 1459,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1444,
+                                lineNumber: 1453,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -942,18 +943,18 @@ function BattalionPage() {
                                         attempts: item.attempts
                                     }, item.test.id, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1460,
+                                        lineNumber: 1469,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1456,
+                                lineNumber: 1465,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1442,
+                        lineNumber: 1451,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -966,7 +967,7 @@ function BattalionPage() {
                                         children: "מסלול הבחנים"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1480,
+                                        lineNumber: 1489,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -974,13 +975,13 @@ function BattalionPage() {
                                         children: "בכל בוחן מוצגים אחוז מעבר, כישלון והצטיינות בלבד."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1484,
+                                        lineNumber: 1493,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1478,
+                                lineNumber: 1487,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1002,7 +1003,7 @@ function BattalionPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                                lineNumber: 1518,
+                                                                lineNumber: 1527,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1010,13 +1011,13 @@ function BattalionPage() {
                                                                 children: item.test.name
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                                lineNumber: 1524,
+                                                                lineNumber: 1533,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                        lineNumber: 1516,
+                                                        lineNumber: 1525,
                                                         columnNumber: 21
                                                     }, this),
                                                     item.latest && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1024,13 +1025,13 @@ function BattalionPage() {
                                                         children: attemptLabel(item.latest.attempt)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                        lineNumber: 1534,
+                                                        lineNumber: 1543,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1514,
+                                                lineNumber: 1523,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1038,7 +1039,7 @@ function BattalionPage() {
                                                 children: item.test.description
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1545,
+                                                lineNumber: 1554,
                                                 columnNumber: 19
                                             }, this),
                                             item.latest ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1050,7 +1051,7 @@ function BattalionPage() {
                                                         tone: "success"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                        lineNumber: 1556,
+                                                        lineNumber: 1565,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(MiniPercent, {
@@ -1059,7 +1060,7 @@ function BattalionPage() {
                                                         tone: "danger"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                        lineNumber: 1565,
+                                                        lineNumber: 1574,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(MiniPercent, {
@@ -1068,20 +1069,20 @@ function BattalionPage() {
                                                         tone: "excellent"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                        lineNumber: 1574,
+                                                        lineNumber: 1583,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1554,
+                                                lineNumber: 1563,
                                                 columnNumber: 21
                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "bg-slate-50 border border-slate-100 rounded-xl p-4 text-slate-400 text-sm mt-5 text-center",
                                                 children: "טרם הוזנו אחוזים"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1587,
+                                                lineNumber: 1596,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1090,24 +1091,24 @@ function BattalionPage() {
                                                 children: "הזנת / עדכון אחוזים"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1593,
+                                                lineNumber: 1602,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, item.test.id, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1507,
+                                        lineNumber: 1516,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1492,
+                                lineNumber: 1501,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1476,
+                        lineNumber: 1485,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1122,7 +1123,7 @@ function BattalionPage() {
                                         children: "הזנה"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1624,
+                                        lineNumber: 1633,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1130,7 +1131,7 @@ function BattalionPage() {
                                         children: "הזנת אחוזי ביצוע"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1628,
+                                        lineNumber: 1637,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1138,13 +1139,13 @@ function BattalionPage() {
                                         children: "הזנת אחוז מעבר ואחוז מצטיינים. אחוז הכישלון מחושב אוטומטית."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1632,
+                                        lineNumber: 1641,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1617,
+                                lineNumber: 1626,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1156,7 +1157,7 @@ function BattalionPage() {
                                         children: "ניתוח"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1647,
+                                        lineNumber: 1656,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1164,7 +1165,7 @@ function BattalionPage() {
                                         children: "סיכום גדודי באחוזים"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1651,
+                                        lineNumber: 1660,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1172,13 +1173,13 @@ function BattalionPage() {
                                         children: "צפייה בהיסטוריית המועדים ובמגמות הביצוע ללא מידע אישי."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1655,
+                                        lineNumber: 1664,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1640,
+                                lineNumber: 1649,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1190,7 +1191,7 @@ function BattalionPage() {
                                         children: "תכנון"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1670,
+                                        lineNumber: 1679,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1198,7 +1199,7 @@ function BattalionPage() {
                                         children: "📅 תוכנית אימונים"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1674,
+                                        lineNumber: 1683,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1206,19 +1207,19 @@ function BattalionPage() {
                                         children: "תכנון האימונים לפי שבועות, מעקב ביצוע והתראות על עומס אימונים נמוך."
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1678,
+                                        lineNumber: 1687,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1663,
+                                lineNumber: 1672,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1615,
+                        lineNumber: 1624,
                         columnNumber: 9
                     }, this),
                     message && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1226,19 +1227,19 @@ function BattalionPage() {
                         children: message
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1694,
+                        lineNumber: 1703,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1147,
+                lineNumber: 1156,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 1042,
+        lineNumber: 1051,
         columnNumber: 5
     }, this);
 }
@@ -1265,7 +1266,7 @@ _c = BattalionPage;
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1739,
+                lineNumber: 1748,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1273,7 +1274,7 @@ _c = BattalionPage;
                 children: value
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1743,
+                lineNumber: 1752,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1281,13 +1282,13 @@ _c = BattalionPage;
                 children: subtitle
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1747,
+                lineNumber: 1756,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 1736,
+        lineNumber: 1745,
         columnNumber: 5
     }, this);
 }
@@ -1305,7 +1306,7 @@ function BattalionAiListCard({ title, items, icon }) {
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1768,
+                lineNumber: 1777,
                 columnNumber: 7
             }, this),
             items.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -1318,25 +1319,25 @@ function BattalionAiListCard({ title, items, icon }) {
                         ]
                     }, `${title}-${index}`, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1780,
+                        lineNumber: 1789,
                         columnNumber: 15
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1773,
+                lineNumber: 1782,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                 className: "text-sm text-slate-400 mt-3",
                 children: "אין מספיק נתונים."
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1791,
+                lineNumber: 1800,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 1766,
+        lineNumber: 1775,
         columnNumber: 5
     }, this);
 }
@@ -1388,7 +1389,7 @@ function TestProgressChart({ testName, attempts }) {
                                 children: "בוחן"
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1919,
+                                lineNumber: 1928,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1396,13 +1397,13 @@ function TestProgressChart({ testName, attempts }) {
                                 children: testName
                             }, void 0, false, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1923,
+                                lineNumber: 1932,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1918,
+                        lineNumber: 1927,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1415,14 +1416,14 @@ function TestProgressChart({ testName, attempts }) {
                                         className: "w-3 h-3 rounded-full bg-green-400"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1931,
+                                        lineNumber: 1940,
                                         columnNumber: 13
                                     }, this),
                                     "עוברים"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1930,
+                                lineNumber: 1939,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1432,14 +1433,14 @@ function TestProgressChart({ testName, attempts }) {
                                         className: "w-3 h-3 rounded-full bg-red-400"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1936,
+                                        lineNumber: 1945,
                                         columnNumber: 13
                                     }, this),
                                     "נכשלים"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1935,
+                                lineNumber: 1944,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1449,26 +1450,26 @@ function TestProgressChart({ testName, attempts }) {
                                         className: "w-3 h-3 rounded-full bg-sky-400"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1941,
+                                        lineNumber: 1950,
                                         columnNumber: 13
                                     }, this),
                                     "מצטיינים"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 1940,
+                                lineNumber: 1949,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1928,
+                        lineNumber: 1937,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1916,
+                lineNumber: 1925,
                 columnNumber: 7
             }, this),
             orderedAttempts.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1476,7 +1477,7 @@ function TestProgressChart({ testName, attempts }) {
                 children: "טרם הוזנו נתונים לבוחן זה"
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1951,
+                lineNumber: 1960,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                 children: [
@@ -1501,7 +1502,7 @@ function TestProgressChart({ testName, attempts }) {
                                                 strokeWidth: "1"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1980,
+                                                lineNumber: 1989,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("text", {
@@ -1516,13 +1517,13 @@ function TestProgressChart({ testName, attempts }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 1994,
+                                                lineNumber: 2003,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, tick, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 1975,
+                                        lineNumber: 1984,
                                         columnNumber: 21
                                     }, this);
                                 }),
@@ -1535,7 +1536,7 @@ function TestProgressChart({ testName, attempts }) {
                                     strokeWidth: "1"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 2013,
+                                    lineNumber: 2022,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("line", {
@@ -1547,7 +1548,7 @@ function TestProgressChart({ testName, attempts }) {
                                     strokeWidth: "1"
                                 }, void 0, false, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 2025,
+                                    lineNumber: 2034,
                                     columnNumber: 15
                                 }, this),
                                 orderedAttempts.length > 1 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -1561,7 +1562,7 @@ function TestProgressChart({ testName, attempts }) {
                                             strokeLinejoin: "round"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                                            lineNumber: 2046,
+                                            lineNumber: 2055,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("polyline", {
@@ -1573,7 +1574,7 @@ function TestProgressChart({ testName, attempts }) {
                                             strokeLinejoin: "round"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                                            lineNumber: 2057,
+                                            lineNumber: 2066,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("polyline", {
@@ -1585,13 +1586,13 @@ function TestProgressChart({ testName, attempts }) {
                                             strokeLinejoin: "round"
                                         }, void 0, false, {
                                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                                            lineNumber: 2068,
+                                            lineNumber: 2077,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/battalions/[name]/page.tsx",
-                                    lineNumber: 2045,
+                                    lineNumber: 2054,
                                     columnNumber: 17
                                 }, this),
                                 orderedAttempts.map((item, index)=>{
@@ -1605,7 +1606,7 @@ function TestProgressChart({ testName, attempts }) {
                                                 fill: "#4ade80"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 2097,
+                                                lineNumber: 2106,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("circle", {
@@ -1615,7 +1616,7 @@ function TestProgressChart({ testName, attempts }) {
                                                 fill: "#f87171"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 2106,
+                                                lineNumber: 2115,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("circle", {
@@ -1625,7 +1626,7 @@ function TestProgressChart({ testName, attempts }) {
                                                 fill: "#38bdf8"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 2115,
+                                                lineNumber: 2124,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("text", {
@@ -1637,25 +1638,25 @@ function TestProgressChart({ testName, attempts }) {
                                                 children: attemptLabel(item.attempt)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                                lineNumber: 2124,
+                                                lineNumber: 2133,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, item.attempt, true, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2092,
+                                        lineNumber: 2101,
                                         columnNumber: 21
                                     }, this);
                                 })
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/battalions/[name]/page.tsx",
-                            lineNumber: 1960,
+                            lineNumber: 1969,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 1958,
+                        lineNumber: 1967,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1669,7 +1670,7 @@ function TestProgressChart({ testName, attempts }) {
                                         children: "עוברים – מועד אחרון"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2150,
+                                        lineNumber: 2159,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1677,13 +1678,13 @@ function TestProgressChart({ testName, attempts }) {
                                         children: formatPercent(orderedAttempts[orderedAttempts.length - 1].passedPercent)
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2153,
+                                        lineNumber: 2162,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 2149,
+                                lineNumber: 2158,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1694,7 +1695,7 @@ function TestProgressChart({ testName, attempts }) {
                                         children: "נכשלים – מועד אחרון"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2164,
+                                        lineNumber: 2173,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1702,13 +1703,13 @@ function TestProgressChart({ testName, attempts }) {
                                         children: formatPercent(orderedAttempts[orderedAttempts.length - 1].failedPercent)
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2167,
+                                        lineNumber: 2176,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 2163,
+                                lineNumber: 2172,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1719,7 +1720,7 @@ function TestProgressChart({ testName, attempts }) {
                                         children: "מצטיינים – מועד אחרון"
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2178,
+                                        lineNumber: 2187,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1727,31 +1728,31 @@ function TestProgressChart({ testName, attempts }) {
                                         children: formatPercent(orderedAttempts[orderedAttempts.length - 1].excellentPercent)
                                     }, void 0, false, {
                                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                                        lineNumber: 2181,
+                                        lineNumber: 2190,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                                lineNumber: 2177,
+                                lineNumber: 2186,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/battalions/[name]/page.tsx",
-                        lineNumber: 2147,
+                        lineNumber: 2156,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 1957,
+                lineNumber: 1966,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 1914,
+        lineNumber: 1923,
         columnNumber: 5
     }, this);
 }
@@ -1770,7 +1771,7 @@ function PercentKpi({ title, value, tone }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 2230,
+                lineNumber: 2239,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1778,13 +1779,13 @@ function PercentKpi({ title, value, tone }) {
                 children: value
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 2234,
+                lineNumber: 2243,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 2226,
+        lineNumber: 2235,
         columnNumber: 5
     }, this);
 }
@@ -1803,7 +1804,7 @@ function MiniPercent({ title, value, tone }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 2272,
+                lineNumber: 2281,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1811,13 +1812,13 @@ function MiniPercent({ title, value, tone }) {
                 children: formatPercent(value)
             }, void 0, false, {
                 fileName: "[project]/app/battalions/[name]/page.tsx",
-                lineNumber: 2276,
+                lineNumber: 2285,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/battalions/[name]/page.tsx",
-        lineNumber: 2268,
+        lineNumber: 2277,
         columnNumber: 5
     }, this);
 }

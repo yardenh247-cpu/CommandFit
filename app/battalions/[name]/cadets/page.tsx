@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 type PercentageResult = {
   testName: string;
   attempt: number;
+  company: string;
   passedPercent: number;
   failedPercent: number;
   excellentPercent: number;
@@ -21,16 +22,52 @@ type PercentageResult = {
 type CloudRow = {
   test_name: string;
   attempt: number | null;
+  company: string | null;
   passed_percent: number | null;
   failed_percent: number | null;
   excellent_percent: number | null;
   test_date: string | null;
 };
 
-function emptyResult(testName: string, attempt = 1): PercentageResult {
+const COMPANY_COUNTS: Record<string, number> = {
+  "דקל": 4,
+  "רימון": 4,
+  "גפן": 4,
+  "דולב": 2,
+  "חרוב": 4,
+};
+
+const COMPANY_NAMES = [
+  "פלוגה א׳",
+  "פלוגה ב׳",
+  "פלוגה ג׳",
+  "פלוגה ד׳",
+  "פלוגה ה׳",
+];
+
+function getCompanies(
+  battalion: string
+) {
+  return COMPANY_NAMES.slice(
+    0,
+    COMPANY_COUNTS[
+      battalion
+    ] ?? 5
+  );
+}
+
+const GENERAL_COMPANY =
+  "כלל הגדוד";
+
+function emptyResult(
+  testName: string,
+  attempt = 1,
+  company = GENERAL_COMPANY
+): PercentageResult {
   return {
     testName,
     attempt,
+    company,
     passedPercent: 0,
     failedPercent: 0,
     excellentPercent: 0,
@@ -78,6 +115,11 @@ export default function PercentageResultsPage() {
   const [activeCycle, setActiveCycle] = useState<CourseCycle | null>(null);
   const tests = useMemo(() => getBattalionTests(battalionName), [battalionName]);
   const [selectedTest, setSelectedTest] = useState<BattalionTest | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState(GENERAL_COMPANY);
+  const companies = useMemo(
+    () => getCompanies(battalionName),
+    [battalionName]
+  );
   const [result, setResult] = useState<PercentageResult | null>(null);
   const [attempts, setAttempts] = useState<PercentageResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,10 +171,11 @@ export default function PercentageResultsPage() {
 
       const { data, error } = await supabase
         .from("percentage_test_results")
-        .select("test_name,attempt,passed_percent,failed_percent,excellent_percent,test_date")
+        .select("test_name,attempt,company,passed_percent,failed_percent,excellent_percent,test_date")
         .eq("cycle_id", cycleId)
         .eq("battalion", battalionName)
         .eq("test_name", selectedTest.name)
+        .eq("company", selectedCompany)
         .order("attempt", { ascending: true });
 
       if (cancelled) return;
@@ -140,7 +183,13 @@ export default function PercentageResultsPage() {
       if (error) {
         console.error(error);
         setAttempts([]);
-        setResult(emptyResult(selectedTest.name));
+        setResult(
+          emptyResult(
+            selectedTest.name,
+            1,
+            selectedCompany
+          )
+        );
         setMessage("לא ניתן היה לטעון את נתוני האחוזים מהענן");
         setLoading(false);
         return;
@@ -149,6 +198,7 @@ export default function PercentageResultsPage() {
       const loaded = ((data ?? []) as CloudRow[]).map((row) => ({
         testName: row.test_name,
         attempt: row.attempt ?? 1,
+        company: row.company ?? GENERAL_COMPANY,
         passedPercent: Number(row.passed_percent ?? 0),
         failedPercent: Number(row.failed_percent ?? 100),
         excellentPercent: Number(row.excellent_percent ?? 0),
@@ -159,7 +209,11 @@ export default function PercentageResultsPage() {
       setResult(
         loaded.length
           ? loaded[loaded.length - 1]
-          : emptyResult(selectedTest.name)
+          : emptyResult(
+              selectedTest.name,
+              1,
+              selectedCompany
+            )
       );
       setLoading(false);
     }
@@ -168,7 +222,12 @@ export default function PercentageResultsPage() {
     return () => {
       cancelled = true;
     };
-  }, [battalionName, cycleId, selectedTest]);
+  }, [
+    battalionName,
+    cycleId,
+    selectedTest,
+    selectedCompany,
+  ]);
 
   const calculator = useMemo(() => {
     const opening = safeInt(openingStrength);
@@ -304,7 +363,13 @@ export default function PercentageResultsPage() {
   function createNextAttempt() {
     if (isReadOnly || !selectedTest) return;
     const highest = attempts.reduce((max, item) => Math.max(max, item.attempt), 0);
-    setResult(emptyResult(selectedTest.name, highest + 1));
+    setResult(
+      emptyResult(
+        selectedTest.name,
+        highest + 1,
+        selectedCompany
+      )
+    );
     setMessage("");
   }
 
@@ -322,6 +387,7 @@ export default function PercentageResultsPage() {
           battalion: battalionName,
           test_name: selectedTest.name,
           attempt: result.attempt,
+          company: selectedCompany,
           passed_percent: result.passedPercent,
           failed_percent: result.failedPercent,
           excellent_percent: result.excellentPercent,
@@ -329,7 +395,7 @@ export default function PercentageResultsPage() {
           updated_at: new Date().toISOString(),
         },
         {
-          onConflict: "cycle_id,battalion,test_name,attempt",
+          onConflict: "cycle_id,battalion,test_name,attempt,company",
         }
       );
 
@@ -410,6 +476,10 @@ export default function PercentageResultsPage() {
         .eq(
           "attempt",
           result.attempt
+        )
+        .eq(
+          "company",
+          selectedCompany
         );
 
     if (error) {
@@ -445,7 +515,8 @@ export default function PercentageResultsPage() {
           ]
         : emptyResult(
             selectedTest.name,
-            1
+            1,
+            selectedCompany
           )
     );
 
@@ -492,7 +563,7 @@ export default function PercentageResultsPage() {
         <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6">
           <p className="font-bold text-blue-900">🔒 תצוגה מצרפית בלבד</p>
           <p className="text-sm text-blue-800 mt-1 leading-6">
-            נשמרים אחוזי ביצוע בלבד. אין אפשרות להזין שמות, מספרי צוערים או מספר נבחנים.
+            נשמרים אחוזי ביצוע בלבד. ניתן לעבוד ברמת כלל הגדוד או פלוגה נבחרת, ללא שמות צוערים.
           </p>
         </section>
 
@@ -513,6 +584,38 @@ export default function PercentageResultsPage() {
                     {test.name}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-bold text-slate-900 mb-2">
+                תצוגה / הזנה
+              </label>
+
+              <select
+                value={selectedCompany}
+                onChange={(event) => {
+                  setSelectedCompany(
+                    event.target.value
+                  );
+                  setMessage("");
+                }}
+                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white text-slate-900"
+              >
+                <option value={GENERAL_COMPANY}>
+                  כלל הגדוד
+                </option>
+
+                {companies.map(
+                  (company) => (
+                    <option
+                      key={company}
+                      value={company}
+                    >
+                      {company}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
@@ -560,6 +663,10 @@ export default function PercentageResultsPage() {
                   <h2 className="text-lg sm:text-xl font-black mt-1">
                     {selectedTest?.name} • {attemptLabel(result.attempt)}
                   </h2>
+
+                  <p className="text-sm font-bold text-blue-700 mt-1">
+                    {selectedCompany}
+                  </p>
                 </div>
 
                 <div className="w-full sm:w-auto">
