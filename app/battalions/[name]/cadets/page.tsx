@@ -171,33 +171,110 @@ function getMetricDefinitions(
   battalionName: string,
   testName: string
 ): MetricDefinition[] {
+  const battalion =
+    String(
+      battalionName ?? ""
+    ).trim();
+
+  const normalizedTest =
+    String(
+      testName ?? ""
+    )
+      .trim()
+      .replace(/[״"']/g, "");
+
   if (
-    testName.includes(
+    normalizedTest.includes(
       "לורן"
     )
   ) {
     return LORAN_METRICS;
   }
 
+  /*
+    מגמת מטה:
+    ארז / ברוש / חרוב / אלון
+    בבחנים האלה שמות הבוחנים אינם בהכרח כוללים כש"ג,
+    ולכן אנחנו מזהים במפורש ריצת 3000 ושכיבות סמיכה.
+  */
+  if (
+    STAFF_BATTALIONS.has(
+      battalion
+    )
+  ) {
+    if (
+      normalizedTest.includes(
+        "3000"
+      ) ||
+      normalizedTest.includes(
+        "3,000"
+      ) ||
+      normalizedTest.includes(
+        "ריצת"
+      ) ||
+      normalizedTest ===
+        "ריצה"
+    ) {
+      return [
+        {
+          key: "run",
+          title:
+            "ריצת 3000 מטר",
+        },
+      ];
+    }
+
+    if (
+      normalizedTest.includes(
+        "שכיבות"
+      ) ||
+      normalizedTest.includes(
+        "סמיכה"
+      )
+    ) {
+      return [
+        {
+          key: "pushups",
+          title:
+            "שכיבות סמיכה",
+        },
+      ];
+    }
+
+    if (
+      normalizedTest.includes(
+        "כשג"
+      ) ||
+      normalizedTest.includes(
+        "כש"
+      )
+    ) {
+      return STAFF_FITNESS_METRICS;
+    }
+
+    return [];
+  }
+
+  /*
+    מגמת לוחמים:
+    הדס נשאר עם אותם מרכיבי כש"ג,
+    אך הממוצעים יוצגו בנפרד לצוערים ולצוערות
+    בגלל usesGenderSplit().
+  */
   const isFitness =
-    testName.includes(
-      'כש"ג'
+    normalizedTest.includes(
+      "כשג"
     ) ||
-    testName.includes(
-      "כש״ג"
+    normalizedTest.includes(
+      "כש"
     );
 
   if (isFitness) {
-    return STAFF_BATTALIONS.has(
-      battalionName
-    )
-      ? STAFF_FITNESS_METRICS
-      : COMBAT_FITNESS_METRICS;
+    return COMBAT_FITNESS_METRICS;
   }
 
   return [];
 }
-
 function formatAverage(
   value?: string
 ) {
@@ -514,16 +591,21 @@ export default function PercentageResultsPage() {
 
   const metricDefinitions =
     useMemo(
-      () =>
-        selectedTest
-          ? getMetricDefinitions(
-              battalionName,
-              selectedTest.name
-            )
-          : [],
+      () => {
+        const testName =
+          selectedTest?.name ??
+          result?.testName ??
+          "";
+
+        return getMetricDefinitions(
+          battalionName,
+          testName
+        );
+      },
       [
         battalionName,
         selectedTest,
+        result?.testName,
       ]
     );
 
@@ -735,7 +817,7 @@ export default function PercentageResultsPage() {
       return [...rest, result].sort((a, b) => a.attempt - b.attempt);
     });
 
-    setMessage("האחוזים נשמרו בענן בהצלחה");
+    setMessage("הנתונים נשמרו בענן בהצלחה");
     setSaving(false);
   }
 
@@ -867,10 +949,10 @@ export default function PercentageResultsPage() {
           <div>
             <p className="text-slate-300 text-sm">CommandFit</p>
             <h1 className="text-2xl sm:text-3xl font-bold mt-1">
-              תמונת מצב באחוזים – גדוד {battalionName}
+              הזנת נתונים – גדוד {battalionName}
             </h1>
             <p className="text-slate-300 mt-2">
-              ללא שמות צוערים וללא נתוני כוח אדם מספריים
+              הזנת נתוני בחנים בצורה מצרפית, ללא שמות צוערים
             </p>
           </div>
 
@@ -887,7 +969,7 @@ export default function PercentageResultsPage() {
         <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6">
           <p className="font-bold text-blue-900">🔒 תצוגה מצרפית בלבד</p>
           <p className="text-sm text-blue-800 mt-1 leading-6">
-            נשמרים אחוזי ביצוע בלבד. ניתן לעבוד ברמת כלל הגדוד או פלוגה נבחרת, ללא שמות צוערים.
+            נשמרים נתוני ביצוע מצרפיים בלבד. ניתן לעבוד ברמת כלל הגדוד או פלוגה נבחרת, ללא שמות צוערים.
           </p>
         </section>
 
