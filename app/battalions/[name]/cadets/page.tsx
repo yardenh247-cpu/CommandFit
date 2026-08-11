@@ -398,7 +398,7 @@ export default function PercentageResultsPage() {
             selectedCompany
           )
         );
-        setMessage("לא ניתן היה לטעון את נתוני האחוזים מהענן");
+        setMessage("לא ניתן היה לטעון את נתוני הבחנים מהענן");
         setLoading(false);
         return;
       }

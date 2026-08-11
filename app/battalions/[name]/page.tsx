@@ -423,7 +423,7 @@ export default function BattalionPage() {
         );
 
         setMessage(
-          "לא ניתן היה לטעון את נתוני האחוזים מהענן"
+          "לא ניתן היה לטעון את נתוני הבחנים מהענן"
         );
 
         setLoading(
@@ -1190,7 +1190,7 @@ export default function BattalionPage() {
         className="min-h-screen bg-slate-100 flex items-center justify-center p-4"
       >
         <div className="bg-white rounded-2xl p-8 shadow-sm text-slate-700">
-          טוען נתוני אחוזים...
+          טוען נתוני בחנים...
         </div>
       </main>
     );
@@ -1272,7 +1272,7 @@ export default function BattalionPage() {
               )}/cadets`}
               className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
-              📈 הזנת אחוזים
+              📈 הזנת נתונים
             </Link>
 
             <Link
@@ -1813,7 +1813,7 @@ export default function BattalionPage() {
                   ) : (
 
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-slate-400 text-sm mt-5 text-center">
-                      טרם הוזנו אחוזים
+                      טרם הוזנו נתונים
                     </div>
 
                   )}
@@ -1824,7 +1824,7 @@ export default function BattalionPage() {
                     )}/cadets`}
                     className="block mt-5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-center font-medium transition"
                   >
-                    הזנת / עדכון אחוזים
+                    הזנת / עדכון נתונים
                   </Link>
 
                 </div>
