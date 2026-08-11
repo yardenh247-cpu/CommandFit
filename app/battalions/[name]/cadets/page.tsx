@@ -10,8 +10,15 @@ import { useAuth } from "@/lib/use-auth";
 import { supabase } from "@/lib/supabase";
 
 type MetricValue = {
+  // תאימות לאחור לגדודים שבהם נשמר בעבר ממוצע אחד
   average?: string;
+
+  // בגדודים מעורבים נשמר ממוצע נפרד לבנים ולבנות
+  maleAverage?: string;
+  femaleAverage?: string;
+
   failedCount?: number;
+
   // תאימות לנתונים ישנים שנשמרו כאחוז
   failedPercent?: number;
 };
@@ -76,6 +83,24 @@ function getCompanies(
 
 const GENERAL_COMPANY =
   "כלל הגדוד";
+
+
+const GENDER_SPLIT_BATTALIONS =
+  new Set([
+    "ברוש",
+    "ארז",
+    "הדס",
+    "אלון",
+    "חרוב",
+  ]);
+
+function usesGenderSplit(
+  battalionName: string
+) {
+  return GENDER_SPLIT_BATTALIONS.has(
+    battalionName
+  );
+}
 
 
 const STAFF_BATTALIONS =
@@ -574,7 +599,12 @@ export default function PercentageResultsPage() {
 
   function updateMetricAverage(
     key: string,
-    value: string
+    value: string,
+    gender:
+      | "male"
+      | "female"
+      | "general" =
+      "general"
   ) {
     if (
       isReadOnly ||
@@ -583,17 +613,37 @@ export default function PercentageResultsPage() {
       return;
     }
 
+    const currentMetric =
+      result.metrics[
+        key
+      ] ?? {};
+
+    const nextMetric =
+      gender === "male"
+        ? {
+            ...currentMetric,
+            maleAverage:
+              value,
+          }
+        : gender ===
+          "female"
+        ? {
+            ...currentMetric,
+            femaleAverage:
+              value,
+          }
+        : {
+            ...currentMetric,
+            average:
+              value,
+          };
+
     setResult({
       ...result,
       metrics: {
         ...result.metrics,
-        [key]: {
-          ...result.metrics[
-            key
-          ],
-          average:
-            value,
-        },
+        [key]:
+          nextMetric,
       },
     });
 
@@ -1114,7 +1164,11 @@ export default function PercentageResultsPage() {
                     </h3>
 
                     <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                      הזן את ממוצע המרכיב ואת מספר הנכשלים בו. אחוז הנכשלים יחושב אוטומטית מתוך מספר הניגשים במחשבון. אם אין פילוח אמיתי, השאר ריק.
+                      {usesGenderSplit(
+                        battalionName
+                      )
+                        ? "בגדוד זה מזינים ממוצע צוערים וממוצע צוערות בנפרד. מספר הנכשלים נשאר נתון כולל, ואחוז הכשל מחושב אוטומטית מתוך מספר הניגשים במחשבון."
+                        : "הזן את ממוצע המרכיב ואת מספר הנכשלים בו. אחוז הנכשלים יחושב אוטומטית מתוך מספר הניגשים במחשבון. אם אין פילוח אמיתי, השאר ריק."}
                     </p>
                   </div>
 
@@ -1161,29 +1215,91 @@ export default function PercentageResultsPage() {
                                 } gap-3 mt-4`}
                               >
                                 {!metric.failureOnly && (
-                                  <label className="bg-white border border-slate-200 rounded-xl p-3">
-                                    <span className="block text-xs font-bold text-slate-600">
-                                      ממוצע
-                                    </span>
+                                  usesGenderSplit(
+                                    battalionName
+                                  ) ? (
+                                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <label className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                                        <span className="block text-xs font-bold text-blue-700">
+                                          ממוצע צוערים
+                                        </span>
 
-                                    <input
-                                      type="text"
-                                      value={
-                                        value?.average ??
-                                        ""
-                                      }
-                                      onChange={(
-                                        event
-                                      ) =>
-                                        updateMetricAverage(
-                                          metric.key,
-                                          event.target.value
-                                        )
-                                      }
-                                      placeholder="לדוגמה 12:21 / 48 / 10"
-                                      className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 bg-white font-bold"
-                                    />
-                                  </label>
+                                        <input
+                                          type="text"
+                                          value={
+                                            value?.maleAverage ??
+                                            ""
+                                          }
+                                          onChange={(
+                                            event
+                                          ) =>
+                                            updateMetricAverage(
+                                              metric.key,
+                                              event.target.value,
+                                              "male"
+                                            )
+                                          }
+                                          placeholder="לדוגמה 12:21 / 48 / 10"
+                                          className="w-full border border-blue-200 rounded-lg px-3 py-2 mt-2 bg-white font-bold"
+                                        />
+                                      </label>
+
+                                      <label className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-3">
+                                        <span className="block text-xs font-bold text-fuchsia-700">
+                                          ממוצע צוערות
+                                        </span>
+
+                                        <input
+                                          type="text"
+                                          value={
+                                            value?.femaleAverage ??
+                                            ""
+                                          }
+                                          onChange={(
+                                            event
+                                          ) =>
+                                            updateMetricAverage(
+                                              metric.key,
+                                              event.target.value,
+                                              "female"
+                                            )
+                                          }
+                                          placeholder="לדוגמה 14:35 / 55 / 8"
+                                          className="w-full border border-fuchsia-200 rounded-lg px-3 py-2 mt-2 bg-white font-bold"
+                                        />
+                                      </label>
+
+                                      {value?.average && (
+                                        <p className="sm:col-span-2 text-[11px] text-slate-500">
+                                          נתון ממוצע ישן שנשמר לפני הפיצול: {value.average}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <label className="bg-white border border-slate-200 rounded-xl p-3">
+                                      <span className="block text-xs font-bold text-slate-600">
+                                        ממוצע
+                                      </span>
+
+                                      <input
+                                        type="text"
+                                        value={
+                                          value?.average ??
+                                          ""
+                                        }
+                                        onChange={(
+                                          event
+                                        ) =>
+                                          updateMetricAverage(
+                                            metric.key,
+                                            event.target.value
+                                          )
+                                        }
+                                        placeholder="לדוגמה 12:21 / 48 / 10"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 mt-2 bg-white font-bold"
+                                      />
+                                    </label>
+                                  )
                                 )}
 
                                 <label className="bg-red-50 border border-red-100 rounded-xl p-3">
@@ -1222,16 +1338,44 @@ export default function PercentageResultsPage() {
                                 } gap-3 mt-4`}
                               >
                                 {!metric.failureOnly && (
-                                  <div className="bg-white border border-slate-200 rounded-xl p-3">
-                                    <p className="text-xs text-slate-500">
-                                      ממוצע
-                                    </p>
-                                    <p className="text-xl font-black mt-1">
-                                      {formatAverage(
-                                        value?.average
-                                      )}
-                                    </p>
-                                  </div>
+                                  usesGenderSplit(
+                                    battalionName
+                                  ) ? (
+                                    <div className="col-span-2 grid grid-cols-2 gap-2">
+                                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                                        <p className="text-xs text-blue-700">
+                                          ממוצע צוערים
+                                        </p>
+                                        <p className="text-xl font-black mt-1">
+                                          {formatAverage(
+                                            value?.maleAverage
+                                          )}
+                                        </p>
+                                      </div>
+
+                                      <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-3">
+                                        <p className="text-xs text-fuchsia-700">
+                                          ממוצע צוערות
+                                        </p>
+                                        <p className="text-xl font-black mt-1">
+                                          {formatAverage(
+                                            value?.femaleAverage
+                                          )}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="bg-white border border-slate-200 rounded-xl p-3">
+                                      <p className="text-xs text-slate-500">
+                                        ממוצע
+                                      </p>
+                                      <p className="text-xl font-black mt-1">
+                                        {formatAverage(
+                                          value?.average
+                                        )}
+                                      </p>
+                                    </div>
+                                  )
                                 )}
 
                                 <div className="bg-red-50 border border-red-100 rounded-xl p-3">
@@ -1359,12 +1503,24 @@ export default function PercentageResultsPage() {
                                         {metric.title}
                                       </strong>
                                       {!metric.failureOnly && (
-                                        <span className="text-slate-500 mr-1">
-                                          {" "}
-                                          {formatAverage(
-                                            metricValue?.average
-                                          )}
-                                        </span>
+                                        usesGenderSplit(
+                                          battalionName
+                                        ) ? (
+                                          <span className="text-slate-500 mr-1">
+                                            {" "}צוערים: {formatAverage(
+                                              metricValue?.maleAverage
+                                            )} • צוערות: {formatAverage(
+                                              metricValue?.femaleAverage
+                                            )}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-500 mr-1">
+                                            {" "}
+                                            {formatAverage(
+                                              metricValue?.average
+                                            )}
+                                          </span>
+                                        )
                                       )}
                                       <span className="text-red-700 font-bold mr-1">
                                         {" "}

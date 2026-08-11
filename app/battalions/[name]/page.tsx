@@ -30,20 +30,37 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 
 type MetricValue = {
   average?: string;
-  failedPercent: number;
+  maleAverage?: string;
+  femaleAverage?: string;
+  failedCount?: number;
+  failedPercent?: number;
 };
 
 type MetricsMap = Record<string, MetricValue>;
+
+
+const GENDER_SPLIT_BATTALIONS =
+  new Set([
+    "ברוש",
+    "ארז",
+    "הדס",
+    "אלון",
+    "חרוב",
+  ]);
+
+function usesGenderSplit(
+  battalionName: string
+) {
+  return GENDER_SPLIT_BATTALIONS.has(
+    battalionName
+  );
+}
 
 type PercentageRow = {
   test_name: string;
 
   attempt:
     | number
-    | null;
-
-  company:
-    | string
     | null;
 
   passed_percent:
@@ -362,7 +379,6 @@ export default function BattalionPage() {
             `
               test_name,
               attempt,
-              company,
               passed_percent,
               failed_percent,
               excellent_percent,
@@ -376,10 +392,6 @@ export default function BattalionPage() {
           .eq(
             "battalion",
             battalionName
-          )
-          .eq(
-            "company",
-            "כלל הגדוד"
           )
           .order(
             "test_name",
@@ -708,6 +720,107 @@ export default function BattalionPage() {
       testCards,
     ]);
 
+  const genderMetricSummary =
+    useMemo(() => {
+      if (
+        !usesGenderSplit(
+          battalionName
+        )
+      ) {
+        return [];
+      }
+
+      const groups =
+        new Map<
+          string,
+          {
+            male: string[];
+            female: string[];
+          }
+        >();
+
+      for (
+        const item of
+        latestResults
+      ) {
+        for (
+          const [
+            key,
+            metric,
+          ] of
+          Object.entries(
+            item.metrics
+          )
+        ) {
+          const label =
+            getMetricLabel(
+              key
+            );
+
+          const current =
+            groups.get(
+              label
+            ) ?? {
+              male: [],
+              female: [],
+            };
+
+          if (
+            metric.maleAverage
+          ) {
+            current.male.push(
+              metric.maleAverage
+            );
+          }
+
+          if (
+            metric.femaleAverage
+          ) {
+            current.female.push(
+              metric.femaleAverage
+            );
+          }
+
+          groups.set(
+            label,
+            current
+          );
+        }
+      }
+
+      return [
+        ...groups.entries(),
+      ]
+        .map(
+          ([
+            label,
+            values,
+          ]) => ({
+            label,
+            male:
+              values.male[
+                values.male.length -
+                  1
+              ] ?? null,
+            female:
+              values.female[
+                values.female.length -
+                  1
+              ] ?? null,
+          })
+        )
+        .filter(
+          (item) =>
+            item.male !==
+              null ||
+            item.female !==
+              null
+        );
+    }, [
+      battalionName,
+      latestResults,
+    ]);
+
   const aiMetrics =
     useMemo(() => {
       const result: Record<
@@ -789,6 +902,8 @@ export default function BattalionPage() {
           {
             failed: number[];
             averages: string[];
+            maleAverages: string[];
+            femaleAverages: string[];
           }
         >();
 
@@ -816,6 +931,8 @@ export default function BattalionPage() {
             ) ?? {
               failed: [],
               averages: [],
+              maleAverages: [],
+              femaleAverages: [],
             };
 
           current.failed.push(
@@ -830,6 +947,22 @@ export default function BattalionPage() {
           ) {
             current.averages.push(
               metric.average
+            );
+          }
+
+          if (
+            metric.maleAverage
+          ) {
+            current.maleAverages.push(
+              metric.maleAverage
+            );
+          }
+
+          if (
+            metric.femaleAverage
+          ) {
+            current.femaleAverages.push(
+              metric.femaleAverage
             );
           }
 
@@ -864,7 +997,27 @@ export default function BattalionPage() {
             failedAverage,
 
           average:
-            group.averages.length > 0
+            usesGenderSplit(
+              battalionName
+            ) &&
+            (
+              group.maleAverages.length >
+                0 ||
+              group.femaleAverages.length >
+                0
+            )
+              ? `ממוצעי צוערים: ${
+                  group.maleAverages
+                    .slice(-4)
+                    .join(" | ") ||
+                  "אין נתון"
+                } | ממוצעי צוערות: ${
+                  group.femaleAverages
+                    .slice(-4)
+                    .join(" | ") ||
+                  "אין נתון"
+                }`
+              : group.averages.length > 0
               ? `ממוצעים שנקלטו: ${group.averages
                   .slice(0, 4)
                   .join(" | ")}`
@@ -1119,7 +1272,7 @@ export default function BattalionPage() {
               )}/cadets`}
               className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
-              📈 הזנת נתונים
+              📈 הזנת אחוזים
             </Link>
 
             <Link
@@ -1222,6 +1375,72 @@ export default function BattalionPage() {
           />
 
         </section>
+
+        {usesGenderSplit(
+          battalionName
+        ) && (
+          <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-8">
+            <div>
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">
+                ממוצעים לפי מגדר
+              </p>
+
+              <h2 className="text-xl sm:text-2xl font-black mt-1">
+                צוערים וצוערות – ממוצעי מרכיבי הבוחן
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                הנתונים נמשכים אוטומטית מהמועד האחרון שנשמר לכל מרכיב.
+              </p>
+            </div>
+
+            {genderMetricSummary.length >
+            0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
+                {genderMetricSummary.map(
+                  (metric) => (
+                    <div
+                      key={
+                        metric.label
+                      }
+                      className="border border-slate-200 rounded-2xl p-4"
+                    >
+                      <p className="font-black text-lg">
+                        {metric.label}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-blue-700">
+                            בנים
+                          </p>
+                          <p className="text-xl font-black mt-1">
+                            {metric.male ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-fuchsia-700">
+                            בנות
+                          </p>
+                          <p className="text-xl font-black mt-1">
+                            {metric.female ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mt-5 text-slate-500 text-center">
+                טרם הוזנו ממוצעי צוערים וצוערות בנפרד
+              </div>
+            )}
+          </section>
+        )}
 
         {/* =================================================
             COMMAND INTELLIGENCE
