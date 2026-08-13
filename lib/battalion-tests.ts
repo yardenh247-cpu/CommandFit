@@ -183,8 +183,17 @@ export const BATTALION_TESTS: Record<
 export function getBattalionTests(
   battalionName: string
 ): BattalionTest[] {
+  const normalizedName =
+    decodeURIComponent(
+      String(
+        battalionName ?? ""
+      )
+    ).trim();
+
   return (
-    BATTALION_TESTS[battalionName] ?? []
+    BATTALION_TESTS[
+      normalizedName
+    ] ?? []
   )
     .slice()
     .sort(
