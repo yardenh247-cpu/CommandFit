@@ -295,6 +295,612 @@ function normalizeRow(
   };
 }
 
+
+function parseAverageToNumber(
+  value?: string
+) {
+  const clean =
+    String(
+      value ?? ""
+    ).trim();
+
+  if (!clean) {
+    return null;
+  }
+
+  if (
+    clean.includes(":")
+  ) {
+    const parts =
+      clean
+        .split(":")
+        .map(Number);
+
+    if (
+      parts.some(
+        (part) =>
+          Number.isNaN(
+            part
+          )
+      )
+    ) {
+      return null;
+    }
+
+    if (
+      parts.length ===
+      2
+    ) {
+      return (
+        parts[0] * 60 +
+        parts[1]
+      );
+    }
+
+    if (
+      parts.length ===
+      3
+    ) {
+      return (
+        parts[0] * 3600 +
+        parts[1] * 60 +
+        parts[2]
+      );
+    }
+  }
+
+  const numeric =
+    Number(
+      clean.replace(
+        ",",
+        "."
+      )
+    );
+
+  return Number.isFinite(
+    numeric
+  )
+    ? numeric
+    : null;
+}
+
+function formatWeightedAverage(
+  sourceValues:
+    Array<{
+      value?: string;
+      weight: number;
+    }>
+) {
+  const parsed =
+    sourceValues
+      .map(
+        (item) => ({
+          value:
+            parseAverageToNumber(
+              item.value
+            ),
+          weight:
+            Math.max(
+              0,
+              Number(
+                item.weight ??
+                0
+              )
+            ),
+          original:
+            item.value,
+        })
+      )
+      .filter(
+        (
+          item
+        ): item is {
+          value: number;
+          weight: number;
+          original:
+            string | undefined;
+        } =>
+          item.value !==
+          null
+      );
+
+  if (
+    parsed.length ===
+    0
+  ) {
+    return undefined;
+  }
+
+  const totalWeight =
+    parsed.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.weight,
+      0
+    );
+
+  const weighted =
+    totalWeight > 0
+      ? parsed.reduce(
+          (
+            sum,
+            item
+          ) =>
+            sum +
+            item.value *
+              item.weight,
+          0
+        ) /
+        totalWeight
+      : parsed.reduce(
+          (
+            sum,
+            item
+          ) =>
+            sum +
+            item.value,
+          0
+        ) /
+        parsed.length;
+
+  const hasTimeFormat =
+    parsed.some(
+      (item) =>
+        String(
+          item.original ??
+          ""
+        ).includes(":")
+    );
+
+  if (
+    hasTimeFormat
+  ) {
+    const roundedSeconds =
+      Math.max(
+        0,
+        Math.round(
+          weighted
+        )
+      );
+
+    const hours =
+      Math.floor(
+        roundedSeconds /
+        3600
+      );
+
+    const minutes =
+      Math.floor(
+        (
+          roundedSeconds %
+          3600
+        ) /
+        60
+      );
+
+    const seconds =
+      roundedSeconds %
+      60;
+
+    if (
+      hours > 0
+    ) {
+      return `${hours}:${String(
+        minutes
+      ).padStart(
+        2,
+        "0"
+      )}:${String(
+        seconds
+      ).padStart(
+        2,
+        "0"
+      )}`;
+    }
+
+    return `${minutes}:${String(
+      seconds
+    ).padStart(
+      2,
+      "0"
+    )}`;
+  }
+
+  return String(
+    Math.round(
+      weighted * 100
+    ) / 100
+  );
+}
+
+function aggregateMetricValues(
+  rows:
+    PercentageResult[],
+  key: string
+): MetricValue {
+  const relevant =
+    rows
+      .map(
+        (row) => ({
+          row,
+          metric:
+            row.metrics[
+              key
+            ],
+        })
+      )
+      .filter(
+        (
+          item
+        ): item is {
+          row:
+            PercentageResult;
+          metric:
+            MetricValue;
+        } =>
+          Boolean(
+            item.metric
+          )
+      );
+
+  if (
+    relevant.length ===
+    0
+  ) {
+    return {};
+  }
+
+  const failedCount =
+    relevant.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        Number(
+          item.metric
+            .failedCount ??
+          0
+        ),
+      0
+    );
+
+  const totalTested =
+    relevant.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        Math.max(
+          0,
+          item.row
+            .testedCount
+        ),
+      0
+    );
+
+  const failedPercent =
+    totalTested > 0
+      ? (
+          failedCount /
+          totalTested
+        ) *
+        100
+      : (() => {
+          const values =
+            relevant
+              .map(
+                (item) =>
+                  item.metric
+                    .failedPercent
+              )
+              .filter(
+                (
+                  value
+                ): value is number =>
+                  typeof value ===
+                    "number" &&
+                  Number.isFinite(
+                    value
+                  )
+              );
+
+          return values.length >
+            0
+            ? values.reduce(
+                (
+                  sum,
+                  value
+                ) =>
+                  sum +
+                  value,
+                0
+              ) /
+              values.length
+            : undefined;
+        })();
+
+  return {
+    average:
+      formatWeightedAverage(
+        relevant.map(
+          (item) => ({
+            value:
+              item.metric
+                .average,
+            weight:
+              item.row
+                .testedCount,
+          })
+        )
+      ),
+
+    maleAverage:
+      formatWeightedAverage(
+        relevant.map(
+          (item) => ({
+            value:
+              item.metric
+                .maleAverage,
+            weight:
+              item.row
+                .testedCount,
+          })
+        )
+      ),
+
+    femaleAverage:
+      formatWeightedAverage(
+        relevant.map(
+          (item) => ({
+            value:
+              item.metric
+                .femaleAverage,
+            weight:
+              item.row
+                .testedCount,
+          })
+        )
+      ),
+
+    failedCount:
+      relevant.some(
+        (item) =>
+          item.metric
+            .failedCount !==
+          undefined
+      )
+        ? failedCount
+        : undefined,
+
+    failedPercent:
+      failedPercent !==
+      undefined
+        ? Math.round(
+            failedPercent *
+              10
+          ) / 10
+        : undefined,
+  };
+}
+
+function aggregateAttemptRows(
+  rows:
+    PercentageResult[]
+): PercentageResult {
+  const first =
+    rows[0];
+
+  const totalTested =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Math.max(
+          0,
+          row.testedCount
+        ),
+      0
+    );
+
+  function weightedPercent(
+    key:
+      | "passedPercent"
+      | "failedPercent"
+      | "excellentPercent"
+  ) {
+    if (
+      totalTested >
+      0
+    ) {
+      const totalCount =
+        rows.reduce(
+          (
+            sum,
+            row
+          ) =>
+            sum +
+            (
+              row[key] /
+              100
+            ) *
+              Math.max(
+                0,
+                row.testedCount
+              ),
+          0
+        );
+
+      return (
+        totalCount /
+        totalTested
+      ) *
+        100;
+    }
+
+    if (
+      rows.length ===
+      0
+    ) {
+      return 0;
+    }
+
+    return (
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          row[key],
+        0
+      ) /
+      rows.length
+    );
+  }
+
+  const metricKeys =
+    new Set<string>();
+
+  for (
+    const row of
+    rows
+  ) {
+    for (
+      const key of
+      Object.keys(
+        row.metrics
+      )
+    ) {
+      metricKeys.add(
+        key
+      );
+    }
+  }
+
+  const metrics:
+    MetricsMap =
+      {};
+
+  for (
+    const key of
+    metricKeys
+  ) {
+    metrics[key] =
+      aggregateMetricValues(
+        rows,
+        key
+      );
+  }
+
+  return {
+    testName:
+      first.testName,
+
+    attempt:
+      first.attempt,
+
+    passedPercent:
+      Math.round(
+        weightedPercent(
+          "passedPercent"
+        ) *
+          10
+      ) / 10,
+
+    failedPercent:
+      Math.round(
+        weightedPercent(
+          "failedPercent"
+        ) *
+          10
+      ) / 10,
+
+    excellentPercent:
+      Math.round(
+        weightedPercent(
+          "excellentPercent"
+        ) *
+          10
+      ) / 10,
+
+    testedCount:
+      totalTested,
+
+    metrics,
+  };
+}
+
+function aggregateRowsByTestAndAttempt(
+  rows:
+    PercentageResult[]
+) {
+  const groups =
+    new Map<
+      string,
+      PercentageResult[]
+    >();
+
+  for (
+    const row of
+    rows
+  ) {
+    const key =
+      `${row.testName}::${row.attempt}`;
+
+    const current =
+      groups.get(
+        key
+      ) ?? [];
+
+    current.push(
+      row
+    );
+
+    groups.set(
+      key,
+      current
+    );
+  }
+
+  return [
+    ...groups.values(),
+  ]
+    .map(
+      aggregateAttemptRows
+    )
+    .sort(
+      (
+        a,
+        b
+      ) => {
+        const byTest =
+          a.testName.localeCompare(
+            b.testName,
+            "he"
+          );
+
+        if (
+          byTest !==
+          0
+        ) {
+          return byTest;
+        }
+
+        return (
+          a.attempt -
+          b.attempt
+        );
+      }
+    );
+}
+
 /* =========================================================
    PAGE
 ========================================================= */
@@ -511,6 +1117,17 @@ export default function BattalionPage() {
      DERIVED
   ======================================================= */
 
+  const aggregatedRows =
+    useMemo(
+      () =>
+        aggregateRowsByTestAndAttempt(
+          rows
+        ),
+      [
+        rows,
+      ]
+    );
+
   const testCards =
     useMemo<
       TestCardData[]
@@ -521,7 +1138,7 @@ export default function BattalionPage() {
             test
           ) => {
             const attempts =
-              rows
+              aggregatedRows
                 .filter(
                   (
                     row
@@ -556,7 +1173,7 @@ export default function BattalionPage() {
         );
       },
       [
-        rows,
+        aggregatedRows,
         tests,
       ]
     );
@@ -1736,7 +2353,7 @@ export default function BattalionPage() {
             </h2>
 
             <p className="text-slate-300 mt-1">
-              התקדמות בכל בוחן בנפרד לפי מועדים — אחוזי עוברים, נכשלים ומצטיינים.
+              התקדמות גדודית בכל בוחן לפי מועדים — כל הפלוגות של אותו מועד מאוחדות אוטומטית לתוצאה אחת משוקללת.
             </p>
 
           </div>
