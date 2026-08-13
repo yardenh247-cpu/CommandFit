@@ -413,7 +413,6 @@ export default function PercentageResultsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-
   const [currentStrength, setCurrentStrength] = useState(0);
   const [tested, setTested] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
@@ -533,79 +532,27 @@ export default function PercentageResultsPage() {
   ]);
 
   const calculator = useMemo(() => {
-    const current =
-      safeInt(
-        currentStrength
-      );
+    const current = safeInt(currentStrength);
+    const testedNow = safeInt(tested);
+    const passedNow = safeInt(passedCount);
+    const excellentNow = safeInt(excellentCount);
+    const absentNow = safeInt(absentCount);
+    const dismissedNow = safeInt(dismissedCount);
 
-    const testedNow =
-      safeInt(
-        tested
-      );
+    const failedNow = Math.max(0, testedNow - passedNow);
 
-    const passedNow =
-      safeInt(
-        passedCount
-      );
-
-    const excellentNow =
-      safeInt(
-        excellentCount
-      );
-
-    const absentNow =
-      safeInt(
-        absentCount
-      );
-
-    const dismissedNow =
-      safeInt(
-        dismissedCount
-      );
-
-    const failedNow =
-      Math.max(
-        0,
-        testedNow -
-          passedNow
-      );
-
-    const attendancePercent =
-      percentFromCounts(
-        testedNow,
-        current
-      );
-
-    const passOfTestedPercent =
-      percentFromCounts(
-        passedNow,
-        testedNow
-      );
-
-    const failOfTestedPercent =
-      percentFromCounts(
-        failedNow,
-        testedNow
-      );
-
-    const excellentOfTestedPercent =
-      percentFromCounts(
-        excellentNow,
-        testedNow
-      );
+    const attendancePercent = percentFromCounts(testedNow, current);
+    const passOfTestedPercent = percentFromCounts(passedNow, testedNow);
+    const failOfTestedPercent = percentFromCounts(failedNow, testedNow);
+    const excellentOfTestedPercent = percentFromCounts(excellentNow, testedNow);
 
     const valid =
       current > 0 &&
       testedNow > 0 &&
-      passedNow <=
-        testedNow &&
-      excellentNow <=
-        passedNow &&
-      testedNow +
-        absentNow <=
-        current &&
-      dismissedNow <=
-        current;
+      passedNow <= testedNow &&
+      excellentNow <= passedNow &&
+      testedNow + absentNow <= current &&
+      dismissedNow <= current;
 
     return {
       failedNow,
@@ -1226,7 +1173,7 @@ export default function PercentageResultsPage() {
                 <p>במועד ב׳/ג׳ מזינים רק את מי שניגשו לאותו מועד חוזר.</p>
                 <p>אין להזין נכשלים — המערכת מחשבת ניגשו פחות עברו.</p>
                 <p>מצטיינים חייבים להיות חלק מתוך העוברים.</p>
-                <p>מצבה נוכחית היא מספר הצוערים הפעילים נכון למועד הבוחן.</p>
+                <p>מצבה נוכחית היא המצבה הפעילה בשלב הנוכחי בקורס.</p>
               </div>
             </details>
 
@@ -1250,7 +1197,7 @@ export default function PercentageResultsPage() {
                   <CompactNumberField title="מודחים / עזבו" value={dismissedCount} onChange={setDismissedCount} />
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mt-4">
                   <CompactResultCard title="% ניגשו מהמצבה" value={formatPercent(calculator.attendancePercent)} tone="neutral" />
                   <CompactResultCard title="% עברו מהניגשים" value={formatPercent(calculator.passOfTestedPercent)} tone="success" />
                   <CompactResultCard title="% נכשלו מהניגשים" value={formatPercent(calculator.failOfTestedPercent)} tone="danger" />
