@@ -75,6 +75,10 @@ type PercentageRow = {
     | number
     | null;
 
+  tested_count:
+    | number
+    | null;
+
   metrics:
     | MetricsMap
     | null;
@@ -90,6 +94,8 @@ type PercentageResult = {
   failedPercent: number;
 
   excellentPercent: number;
+
+  testedCount: number;
 
   metrics: MetricsMap;
 };
@@ -159,6 +165,38 @@ function formatPercent(
     ) / 10;
 
   return `${rounded}%`;
+}
+
+function failedPercentFromMetric(
+  metric: MetricValue,
+  testedCount: number
+) {
+  if (
+    metric.failedCount !==
+      undefined &&
+    testedCount > 0
+  ) {
+    return (
+      Math.round(
+        (
+          metric.failedCount /
+          testedCount
+        ) *
+          1000
+      ) / 10
+    );
+  }
+
+  if (
+    metric.failedPercent !==
+    undefined
+  ) {
+    return Number(
+      metric.failedPercent
+    );
+  }
+
+  return null;
 }
 
 function attemptLabel(
@@ -243,6 +281,12 @@ function normalizeRow(
     excellentPercent:
       Number(
         row.excellent_percent ??
+        0
+      ),
+
+    testedCount:
+      Number(
+        row.tested_count ??
         0
       ),
 
@@ -382,6 +426,7 @@ export default function BattalionPage() {
               passed_percent,
               failed_percent,
               excellent_percent,
+              tested_count,
               metrics
             `
           )
@@ -423,7 +468,7 @@ export default function BattalionPage() {
         );
 
         setMessage(
-          "לא ניתן היה לטעון את נתוני הבחנים מהענן"
+          "לא ניתן היה לטעון את נתוני האחוזים מהענן"
         );
 
         setLoading(
@@ -734,11 +779,24 @@ export default function BattalionPage() {
         new Map<
           string,
           {
-            male: string[];
-            female: string[];
+            male:
+              string | null;
+            female:
+              string | null;
+            failedCount:
+              number | null;
+            failedPercent:
+              number | null;
+            testedCount:
+              number;
           }
         >();
 
+      /*
+        latestResults מכיל את המועד האחרון לכל בוחן.
+        לכל מרכיב נשמור את הנתון האחרון שנמצא,
+        כולל מספר הניגשים של אותו מועד.
+      */
       for (
         const item of
         latestResults
@@ -757,65 +815,41 @@ export default function BattalionPage() {
               key
             );
 
-          const current =
-            groups.get(
-              label
-            ) ?? {
-              male: [],
-              female: [],
-            };
-
-          if (
-            metric.maleAverage
-          ) {
-            current.male.push(
-              metric.maleAverage
-            );
-          }
-
-          if (
-            metric.femaleAverage
-          ) {
-            current.female.push(
-              metric.femaleAverage
-            );
-          }
-
           groups.set(
             label,
-            current
+            {
+              male:
+                metric.maleAverage ??
+                null,
+              female:
+                metric.femaleAverage ??
+                null,
+              failedCount:
+                metric.failedCount ??
+                null,
+              failedPercent:
+                failedPercentFromMetric(
+                  metric,
+                  item.testedCount
+                ),
+              testedCount:
+                item.testedCount,
+            }
           );
         }
       }
 
       return [
         ...groups.entries(),
-      ]
-        .map(
-          ([
-            label,
-            values,
-          ]) => ({
-            label,
-            male:
-              values.male[
-                values.male.length -
-                  1
-              ] ?? null,
-            female:
-              values.female[
-                values.female.length -
-                  1
-              ] ?? null,
-          })
-        )
-        .filter(
-          (item) =>
-            item.male !==
-              null ||
-            item.female !==
-              null
-        );
+      ].map(
+        ([
+          label,
+          values,
+        ]) => ({
+          label,
+          ...values,
+        })
+      );
     }, [
       battalionName,
       latestResults,
@@ -1190,7 +1224,7 @@ export default function BattalionPage() {
         className="min-h-screen bg-slate-100 flex items-center justify-center p-4"
       >
         <div className="bg-white rounded-2xl p-8 shadow-sm text-slate-700">
-          טוען נתוני בחנים...
+          טוען נתוני אחוזים...
         </div>
       </main>
     );
@@ -1390,7 +1424,7 @@ export default function BattalionPage() {
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                הנתונים נמשכים אוטומטית מהמועד האחרון שנשמר לכל מרכיב.
+                הנתונים נמשכים אוטומטית מהמועד האחרון. אחוז הנכשלים מחושב לפי מספר הנכשלים מתוך מספר הניגשים של אותו מועד.
               </p>
             </div>
 
@@ -1412,7 +1446,7 @@ export default function BattalionPage() {
                       <div className="grid grid-cols-2 gap-3 mt-3">
                         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                           <p className="text-xs font-bold text-blue-700">
-                            בנים
+                            ממוצע צוערים
                           </p>
                           <p className="text-xl font-black mt-1">
                             {metric.male ??
@@ -1422,11 +1456,35 @@ export default function BattalionPage() {
 
                         <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-3">
                           <p className="text-xs font-bold text-fuchsia-700">
-                            בנות
+                            ממוצע צוערות
                           </p>
                           <p className="text-xl font-black mt-1">
                             {metric.female ??
                               "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-red-700">
+                            מספר נכשלים
+                          </p>
+                          <p className="text-xl font-black mt-1 text-red-700">
+                            {metric.failedCount ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-amber-700">
+                            אחוז נכשלים
+                          </p>
+                          <p className="text-xl font-black mt-1 text-amber-700">
+                            {metric.failedPercent !==
+                            null
+                              ? formatPercent(
+                                  metric.failedPercent
+                                )
+                              : "אין נתון"}
                           </p>
                         </div>
                       </div>
@@ -1689,6 +1747,11 @@ export default function BattalionPage() {
                   key={item.test.id}
                   testName={item.test.name}
                   attempts={item.attempts}
+                  showGenderSplit={
+                    usesGenderSplit(
+                      battalionName
+                    )
+                  }
                 />
               )
             )}
@@ -2029,9 +2092,11 @@ function BattalionAiListCard({
 function TestProgressChart({
   testName,
   attempts,
+  showGenderSplit,
 }: {
   testName: string;
   attempts: PercentageResult[];
+  showGenderSplit: boolean;
 }) {
   const width = 600;
   const height = 260;
@@ -2059,6 +2124,45 @@ function TestProgressChart({
         a.attempt -
         b.attempt
     );
+
+  const latestAttempt =
+    orderedAttempts.length > 0
+      ? orderedAttempts[
+          orderedAttempts.length - 1
+        ]
+      : null;
+
+  const latestGenderMetrics =
+    latestAttempt
+      ? Object.entries(
+          latestAttempt.metrics
+        )
+          .map(
+            ([
+              key,
+              metric,
+            ]) => ({
+              key,
+              label:
+                getMetricLabel(
+                  key
+                ),
+              male:
+                metric.maleAverage ??
+                null,
+              female:
+                metric.femaleAverage ??
+                null,
+            })
+          )
+          .filter(
+            (metric) =>
+              metric.male !==
+                null ||
+              metric.female !==
+                null
+          )
+      : [];
 
   function xForIndex(
     index: number
@@ -2417,6 +2521,55 @@ function TestProgressChart({
             </div>
 
           </div>
+
+          {showGenderSplit &&
+            latestGenderMetrics.length >
+              0 && (
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <p className="text-xs font-bold text-slate-300 mb-2">
+                  ממוצעי המועד האחרון
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {latestGenderMetrics.map(
+                    (metric) => (
+                      <div
+                        key={
+                          metric.key
+                        }
+                        className="bg-white/5 border border-white/10 rounded-xl p-3"
+                      >
+                        <p className="text-xs font-black text-white mb-2">
+                          {metric.label}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-blue-400/10 border border-blue-300/20 rounded-lg p-2">
+                            <p className="text-[10px] text-blue-200 font-bold">
+                              ממוצע צוערים
+                            </p>
+                            <p className="text-lg font-black text-blue-100 mt-1">
+                              {metric.male ??
+                                "אין נתון"}
+                            </p>
+                          </div>
+
+                          <div className="bg-fuchsia-400/10 border border-fuchsia-300/20 rounded-lg p-2">
+                            <p className="text-[10px] text-fuchsia-200 font-bold">
+                              ממוצע צוערות
+                            </p>
+                            <p className="text-lg font-black text-fuchsia-100 mt-1">
+                              {metric.female ??
+                                "אין נתון"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
         </>
 
       )}

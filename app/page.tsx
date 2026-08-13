@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -9,49 +9,20 @@ import {
 } from "react";
 
 import {
-  useAuth,
-} from "@/lib/use-auth";
+  getBattalionTests,
+  type BattalionTest,
+} from "@/lib/battalion-tests";
+
+import {
+  getActiveCycle,
+  type CourseCycle,
+} from "@/lib/cycles";
 
 import {
   supabase,
 } from "@/lib/supabase";
 
-import {
-  getActiveCycle,
-} from "@/lib/cycles";
-
-import {
-  getBattalionTests,
-} from "@/lib/battalion-tests";
 import NotificationsPanel from "@/components/NotificationsPanel";
-
-/* =========================================================
-   CONFIG
-========================================================= */
-
-const infantryCompletion = [
-  "גפן",
-];
-
-const fighters = [
-  "דקל",
-  "רימון",
-  "הדס",
-  "דולב",
-];
-
-const staff = [
-  "ארז",
-  "ברוש",
-  "חרוב",
-  "אלון",
-];
-
-const allBattalions = [
-  ...infantryCompletion,
-  ...fighters,
-  ...staff,
-];
 
 /* =========================================================
    TYPES
@@ -59,57 +30,81 @@ const allBattalions = [
 
 type MetricValue = {
   average?: string;
-  failedPercent: number;
+  maleAverage?: string;
+  femaleAverage?: string;
+  failedCount?: number;
+  failedPercent?: number;
 };
 
-type MetricsMap =
-  Record<string, MetricValue>;
+type MetricsMap = Record<string, MetricValue>;
 
-type CloudRow = {
-  cycle_id: string;
-  battalion: string;
+
+const GENDER_SPLIT_BATTALIONS =
+  new Set([
+    "ברוש",
+    "ארז",
+    "הדס",
+    "אלון",
+    "חרוב",
+  ]);
+
+function usesGenderSplit(
+  battalionName: string
+) {
+  return GENDER_SPLIT_BATTALIONS.has(
+    battalionName
+  );
+}
+
+type PercentageRow = {
   test_name: string;
-  attempt: number | null;
-  company: string | null;
 
-  passed_percent: number | null;
-  failed_percent: number | null;
-  excellent_percent: number | null;
+  attempt:
+    | number
+    | null;
+
+  passed_percent:
+    | number
+    | null;
+
+  failed_percent:
+    | number
+    | null;
+
+  excellent_percent:
+    | number
+    | null;
 
   metrics:
     | MetricsMap
     | null;
 };
 
-type ResultRow = {
-  cycleId: string;
-  battalion: string;
+type PercentageResult = {
   testName: string;
+
   attempt: number;
 
   passedPercent: number;
+
   failedPercent: number;
+
   excellentPercent: number;
 
   metrics: MetricsMap;
 };
 
-type BattalionSummary = {
-  battalion: string;
+type TestCardData = {
+  test: BattalionTest;
 
-  passedAverage: number | null;
-  failedAverage: number | null;
-  excellentAverage: number | null;
-
-  completionPercent: number;
-
-  weakness:
-    | {
-        label: string;
-        failedPercent: number;
-      }
+  latest:
+    | PercentageResult
     | null;
+
+  attempts:
+    PercentageResult[];
 };
+
 
 
 type AiAnalysis = {
@@ -121,20 +116,35 @@ type AiAnalysis = {
   commanderMessage: string;
 };
 
-type AiMetricPayload = Record<
-  string,
-  {
-    average?: string;
-    failedPercent: number;
-  }
->;
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const battalionTracks:
+  Record<
+    string,
+    string
+  > = {
+  דקל: "מגמת לוחמים",
+  רימון: "מגמת לוחמים",
+  גפן: "מגמת לוחמים",
+  הדס: "מגמת לוחמים",
+  דולב: "מגמת לוחמים",
+
+  ארז: "מגמת מטה",
+  ברוש: "מגמת מטה",
+  חרוב: "מגמת מטה",
+  אלון: "מגמת מטה",
+};
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
 function formatPercent(
-  value: number | null
+  value:
+    | number
+    | null
 ) {
   if (
     value === null ||
@@ -143,119 +153,205 @@ function formatPercent(
     return "—";
   }
 
-  return `${
+  const rounded =
     Math.round(
       value * 10
-    ) / 10
-  }%`;
+    ) / 10;
+
+  return `${rounded}%`;
 }
 
-function average(
-  values: number[]
+function attemptLabel(
+  attempt: number
 ) {
-  if (
-    values.length ===
-    0
-  ) {
-    return null;
-  }
+  const labels:
+    Record<
+      number,
+      string
+    > = {
+    1: "מועד א׳",
+    2: "מועד ב׳",
+    3: "מועד ג׳",
+    4: "מועד ד׳",
+    5: "מועד ה׳",
+    6: "מועד ו׳",
+    7: "מועד ז׳",
+    8: "מועד ח׳",
+    9: "מועד ט׳",
+    10: "מועד י׳",
+  };
 
   return (
-    values.reduce(
-      (
-        sum,
-        value
-      ) =>
-        sum + value,
-      0
-    ) /
-    values.length
+    labels[attempt] ??
+    `מועד ${attempt}`
   );
 }
 
 function getMetricLabel(
   key: string
 ) {
-  const labels:
-    Record<string, string> = {
-      run: "ריצה",
-      facilities: "מתקנים",
-      ylm: 'יל"מ',
-      sprints: "ספרינטים",
-      pullups: "מתח",
-      push:
-        "לחיצת חזה / מקבילים",
-      floorLift:
-        "הרמה מהרצפה",
-      pushups:
-        "שכיבות סמיכה",
-    };
+  const labels: Record<string, string> = {
+    run: "ריצה",
+    facilities: "מתקנים",
+    ylm: 'יל"מ',
+    sprints: "ספרינטים",
+    pullups: "מתח",
+    push: "לחיצת חזה / מקבילים",
+    floorLift: "הרמה מהרצפה",
+    pushups: "שכיבות סמיכה",
+  };
 
-  return (
-    labels[key] ??
-    key
-  );
+  return labels[key] ?? key;
+}
+
+function signedPoints(
+  value: number
+) {
+  const rounded =
+    Math.round(value * 10) / 10;
+
+  return rounded > 0
+    ? `+${rounded}`
+    : `${rounded}`;
+}
+
+function normalizeRow(
+  row:
+    PercentageRow
+):
+  PercentageResult {
+  return {
+    testName:
+      row.test_name,
+
+    attempt:
+      row.attempt ??
+      1,
+
+    passedPercent:
+      Number(
+        row.passed_percent ??
+        0
+      ),
+
+    failedPercent:
+      Number(
+        row.failed_percent ??
+        0
+      ),
+
+    excellentPercent:
+      Number(
+        row.excellent_percent ??
+        0
+      ),
+
+    metrics:
+      row.metrics ?? {},
+  };
 }
 
 /* =========================================================
    PAGE
 ========================================================= */
 
-export default function Home() {
-  const router =
-    useRouter();
+export default function BattalionPage() {
+  const params =
+    useParams<{
+      name: string;
+    }>();
 
-  const {
-    user,
-    loading: authLoading,
-    isAdmin,
-    isViewer,
-  } =
-    useAuth();
+  const battalionName =
+    decodeURIComponent(
+      params.name
+    );
+
+  const track =
+    battalionTracks[
+      battalionName
+    ] ??
+    "CommandFit";
+
+  const tests =
+    useMemo(
+      () =>
+        getBattalionTests(
+          battalionName
+        ),
+      [
+        battalionName,
+      ]
+    );
+
+  const [
+    activeCycle,
+    setActiveCycle,
+  ] =
+    useState<
+      CourseCycle | null
+    >(
+      null
+    );
 
   const [
     rows,
     setRows,
   ] =
     useState<
-      ResultRow[]
+      PercentageResult[]
     >([]);
 
   const [
-    dataLoading,
-    setDataLoading,
+    loading,
+    setLoading,
   ] =
-    useState(true);
+    useState(
+      true
+    );
 
   const [
-    dataMessage,
-    setDataMessage,
+    message,
+    setMessage,
   ] =
-    useState("");
+    useState(
+      ""
+    );
+
+  const [
+    aiLoading,
+    setAiLoading,
+  ] = useState(false);
+
+  const [
+    aiError,
+    setAiError,
+  ] = useState("");
+
+  const [
+    aiAnalysis,
+    setAiAnalysis,
+  ] = useState<AiAnalysis | null>(null);
+
+  const cycleId =
+    activeCycle?.id ??
+    `legacy-${battalionName}`;
 
   /* =======================================================
-     LOGOUT
+     LOAD CYCLE
   ======================================================= */
 
-  async function logout() {
-    try {
-      await fetch(
-        "/api/auth/logout",
-        {
-          method: "POST",
-        }
-      );
-    } finally {
-      router.push(
-        "/login"
-      );
-
-      router.refresh();
-    }
-  }
+  useEffect(() => {
+    setActiveCycle(
+      getActiveCycle(
+        battalionName
+      )
+    );
+  }, [
+    battalionName,
+  ]);
 
   /* =======================================================
-     LOAD DASHBOARD DATA
+     LOAD PERCENTAGES
   ======================================================= */
 
   useEffect(() => {
@@ -263,11 +359,11 @@ export default function Home() {
       false;
 
     async function load() {
-      setDataLoading(
+      setLoading(
         true
       );
 
-      setDataMessage(
+      setMessage(
         ""
       );
 
@@ -281,31 +377,44 @@ export default function Home() {
           )
           .select(
             `
-              cycle_id,
-              battalion,
               test_name,
               attempt,
-              company,
               passed_percent,
               failed_percent,
               excellent_percent,
               metrics
             `
           )
-          .in(
+          .eq(
+            "cycle_id",
+            cycleId
+          )
+          .eq(
             "battalion",
-            allBattalions
+            battalionName
+          )
+          .order(
+            "test_name",
+            {
+              ascending:
+                true,
+            }
+          )
+          .order(
+            "attempt",
+            {
+              ascending:
+                true,
+            }
           );
 
-      if (
-        cancelled
-      ) {
+      if (cancelled) {
         return;
       }
 
       if (error) {
         console.error(
-          "Home dashboard load error:",
+          "Battalion percentage load error:",
           error
         );
 
@@ -313,100 +422,29 @@ export default function Home() {
           []
         );
 
-        setDataMessage(
-          "לא ניתן היה לטעון את נתוני הדשבורד מהענן"
+        setMessage(
+          "לא ניתן היה לטעון את נתוני האחוזים מהענן"
         );
 
-        setDataLoading(
+        setLoading(
           false
         );
 
         return;
       }
 
-      const activeCycleByBattalion =
-        Object.fromEntries(
-          allBattalions.map(
-            (
-              battalion
-            ) => {
-              const cycle =
-                getActiveCycle(
-                  battalion
-                );
-
-              return [
-                battalion,
-                cycle?.id ??
-                  `legacy-${battalion}`,
-              ];
-            }
-          )
-        );
-
-      const normalized =
+      setRows(
         (
           (
             data ??
             []
-          ) as CloudRow[]
+          ) as PercentageRow[]
+        ).map(
+          normalizeRow
         )
-          .filter(
-            (row) =>
-              activeCycleByBattalion[
-                row.battalion
-              ] ===
-                row.cycle_id &&
-              (
-                row.company ??
-                "כלל הגדוד"
-              ) ===
-                "כלל הגדוד"
-          )
-          .map(
-            (row) => ({
-              cycleId:
-                row.cycle_id,
-
-              battalion:
-                row.battalion,
-
-              testName:
-                row.test_name,
-
-              attempt:
-                row.attempt ??
-                1,
-
-              passedPercent:
-                Number(
-                  row.passed_percent ??
-                    0
-                ),
-
-              failedPercent:
-                Number(
-                  row.failed_percent ??
-                    0
-                ),
-
-              excellentPercent:
-                Number(
-                  row.excellent_percent ??
-                    0
-                ),
-
-              metrics:
-                row.metrics ??
-                {},
-            })
-          );
-
-      setRows(
-        normalized
       );
 
-      setDataLoading(
+      setLoading(
         false
       );
     }
@@ -417,301 +455,788 @@ export default function Home() {
       cancelled =
         true;
     };
-  }, []);
+  }, [
+    battalionName,
+    cycleId,
+  ]);
 
   /* =======================================================
-     LATEST RESULT PER TEST
+     DERIVED
   ======================================================= */
 
-  const latestRows =
+  const testCards =
+    useMemo<
+      TestCardData[]
+    >(
+      () => {
+        return tests.map(
+          (
+            test
+          ) => {
+            const attempts =
+              rows
+                .filter(
+                  (
+                    row
+                  ) =>
+                    row.testName ===
+                    test.name
+                )
+                .sort(
+                  (
+                    a,
+                    b
+                  ) =>
+                    a.attempt -
+                    b.attempt
+                );
+
+            return {
+              test,
+
+              attempts,
+
+              latest:
+                attempts.length >
+                0
+                  ? attempts[
+                      attempts.length -
+                        1
+                    ]
+                  : null,
+            };
+          }
+        );
+      },
+      [
+        rows,
+        tests,
+      ]
+    );
+
+  const latestResults =
+    useMemo(
+      () =>
+        testCards
+          .map(
+            (
+              item
+            ) =>
+              item.latest
+          )
+          .filter(
+            (
+              item
+            ):
+              item is PercentageResult =>
+              item !==
+              null
+          ),
+      [
+        testCards,
+      ]
+    );
+
+  const averagePassed =
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
+          0
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.passedPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
+
+  const averageFailed =
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
+          0
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.failedPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
+
+  const averageExcellent =
+    useMemo(
+      () => {
+        if (
+          latestResults.length ===
+          0
+        ) {
+          return null;
+        }
+
+        return (
+          latestResults.reduce(
+            (
+              sum,
+              item
+            ) =>
+              sum +
+              item.excellentPercent,
+            0
+          ) /
+          latestResults.length
+        );
+      },
+      [
+        latestResults,
+      ]
+    );
+
+
+  const battalionIntelligence =
     useMemo(() => {
-      const map =
+      const trends = testCards
+        .filter(
+          (item) =>
+            item.attempts.length >= 2
+        )
+        .map((item) => {
+          const ordered =
+            [...item.attempts].sort(
+              (a, b) =>
+                a.attempt -
+                b.attempt
+            );
+
+          const first =
+            ordered[0];
+
+          const latest =
+            ordered[
+              ordered.length - 1
+            ];
+
+          return {
+            testName:
+              item.test.name,
+
+            firstAttempt:
+              first.attempt,
+
+            latestAttempt:
+              latest.attempt,
+
+            passedChange:
+              latest.passedPercent -
+              first.passedPercent,
+
+            failedChange:
+              latest.failedPercent -
+              first.failedPercent,
+
+            excellentChange:
+              latest.excellentPercent -
+              first.excellentPercent,
+          };
+        });
+
+      const weakestTest =
+        latestResults.length > 0
+          ? [...latestResults].sort(
+              (a, b) =>
+                b.failedPercent -
+                a.failedPercent
+            )[0]
+          : null;
+
+      const strongestTest =
+        latestResults.length > 0
+          ? [...latestResults].sort(
+              (a, b) =>
+                b.passedPercent -
+                a.passedPercent
+            )[0]
+          : null;
+
+      const biggestImprovement =
+        trends.length > 0
+          ? [...trends].sort(
+              (a, b) =>
+                b.passedChange -
+                a.passedChange
+            )[0]
+          : null;
+
+      const biggestDecline =
+        trends
+          .filter(
+            (item) =>
+              item.passedChange < 0
+          )
+          .sort(
+            (a, b) =>
+              a.passedChange -
+              b.passedChange
+          )[0] ?? null;
+
+      return {
+        trends,
+        weakestTest,
+        strongestTest,
+        biggestImprovement,
+        biggestDecline,
+      };
+    }, [
+      latestResults,
+      testCards,
+    ]);
+
+  const genderMetricSummary =
+    useMemo(() => {
+      if (
+        !usesGenderSplit(
+          battalionName
+        )
+      ) {
+        return [];
+      }
+
+      const groups =
         new Map<
           string,
-          ResultRow
+          {
+            male: string[];
+            female: string[];
+            failedCounts: number[];
+            failedPercents: number[];
+          }
         >();
 
       for (
-        const row of
-        rows
+        const item of
+        latestResults
       ) {
-        const key =
-          `${row.battalion}::${row.testName}`;
-
-        const existing =
-          map.get(
-            key
-          );
-
-        if (
-          !existing ||
-          row.attempt >
-            existing.attempt
-        ) {
-          map.set(
+        for (
+          const [
             key,
-            row
+            metric,
+          ] of
+          Object.entries(
+            item.metrics
+          )
+        ) {
+          const label =
+            getMetricLabel(
+              key
+            );
+
+          const current =
+            groups.get(
+              label
+            ) ?? {
+              male: [],
+              female: [],
+              failedCounts: [],
+              failedPercents: [],
+            };
+
+          if (
+            metric.maleAverage
+          ) {
+            current.male.push(
+              metric.maleAverage
+            );
+          }
+
+          if (
+            metric.femaleAverage
+          ) {
+            current.female.push(
+              metric.femaleAverage
+            );
+          }
+
+          if (
+            metric.failedCount !== undefined
+          ) {
+            current.failedCounts.push(
+              Number(
+                metric.failedCount
+              )
+            );
+          }
+
+          if (
+            metric.failedPercent !== undefined
+          ) {
+            current.failedPercents.push(
+              Number(
+                metric.failedPercent
+              )
+            );
+          }
+
+          groups.set(
+            label,
+            current
           );
         }
       }
 
       return [
-        ...map.values(),
-      ];
+        ...groups.entries(),
+      ]
+        .map(
+          ([
+            label,
+            values,
+          ]) => ({
+            label,
+            male:
+              values.male[
+                values.male.length -
+                  1
+              ] ?? null,
+            female:
+              values.female[
+                values.female.length -
+                  1
+              ] ?? null,
+            failedCount:
+              values.failedCounts[
+                values.failedCounts.length -
+                  1
+              ] ?? null,
+            failedPercent:
+              values.failedPercents[
+                values.failedPercents.length -
+                  1
+              ] ?? null,
+          })
+        )
+        .filter(
+          (item) =>
+            item.male !==
+              null ||
+            item.female !==
+              null ||
+            item.failedCount !==
+              null ||
+            item.failedPercent !==
+              null
+        );
     }, [
-      rows,
+      battalionName,
+      latestResults,
     ]);
 
-  /* =======================================================
-     BATTALION SUMMARIES
-  ======================================================= */
-
-  const battalionSummaries =
+  const aiMetrics =
     useMemo(() => {
-      const result:
-        Record<
-          string,
-          BattalionSummary
-        > = {};
-
-      for (
-        const battalion of
-        allBattalions
-      ) {
-        const battalionRows =
-          latestRows.filter(
-            (row) =>
-              row.battalion ===
-              battalion
-          );
-
-        const tests =
-          getBattalionTests(
-            battalion
-          );
-
-        const completionPercent =
-          tests.length > 0
-            ? Math.round(
-                (
-                  battalionRows.length /
-                  tests.length
-                ) *
-                  100
-              )
-            : 0;
-
-        const weaknesses:
-          Array<{
-            label: string;
-            failedPercent: number;
-          }> = [];
-
-        for (
-          const row of
-          battalionRows
-        ) {
-          for (
-            const [
-              key,
-              metric,
-            ] of
-            Object.entries(
-              row.metrics
-            )
-          ) {
-            weaknesses.push({
-              label:
-                getMetricLabel(
-                  key
-                ),
-
-              failedPercent:
-                Number(
-                  metric.failedPercent ??
-                    0
-                ),
-            });
-          }
+      const result: Record<
+        string,
+        {
+          average?: string;
+          failedPercent: number;
         }
+      > = {};
 
-        const weakness =
-          weaknesses.length > 0
-            ? [
-                ...weaknesses,
-              ].sort(
-                (
-                  a,
-                  b
-                ) =>
-                  b.failedPercent -
-                  a.failedPercent
-              )[0]
+      /*
+        1. תמונת מצב של כל בוחן
+      */
+      for (
+        const item of
+        latestResults
+      ) {
+        const card =
+          testCards.find(
+            (candidate) =>
+              candidate.test.name ===
+              item.testName
+          );
+
+        const ordered =
+          card
+            ? [...card.attempts].sort(
+                (a, b) =>
+                  a.attempt -
+                  b.attempt
+              )
+            : [];
+
+        const first =
+          ordered[0];
+
+        const change =
+          first &&
+          first.attempt !==
+            item.attempt
+            ? item.passedPercent -
+              first.passedPercent
             : null;
 
         result[
-          battalion
+          `בוחן: ${item.testName}`
         ] = {
-          battalion,
+          failedPercent:
+            item.failedPercent,
 
-          passedAverage:
-            average(
-              battalionRows.map(
-                (row) =>
-                  row.passedPercent
-              )
-            ),
+          average:
+            [
+              `${attemptLabel(
+                item.attempt
+              )}: ${formatPercent(
+                item.passedPercent
+              )} עוברים`,
+              `${formatPercent(
+                item.excellentPercent
+              )} מצטיינים`,
+              change !== null
+                ? `שינוי במעבר מהמועד הראשון: ${signedPoints(
+                    change
+                  )} נק׳`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" | "),
+        };
+      }
 
-          failedAverage:
-            average(
-              battalionRows.map(
-                (row) =>
-                  row.failedPercent
-              )
-            ),
+      /*
+        2. פרמטרים פנימיים — ריצה, מתח,
+           ספרינטים וכו׳, אם קיימים בענן
+      */
+      const metricGroups =
+        new Map<
+          string,
+          {
+            failed: number[];
+            averages: string[];
+            maleAverages: string[];
+            femaleAverages: string[];
+          }
+        >();
 
-          excellentAverage:
-            average(
-              battalionRows.map(
-                (row) =>
-                  row.excellentPercent
-              )
-            ),
+      for (
+        const item of
+        latestResults
+      ) {
+        for (
+          const [
+            key,
+            metric,
+          ] of
+          Object.entries(
+            item.metrics
+          )
+        ) {
+          const label =
+            getMetricLabel(
+              key
+            );
 
-          completionPercent:
-            Math.min(
-              100,
-              completionPercent
-            ),
+          const current =
+            metricGroups.get(
+              label
+            ) ?? {
+              failed: [],
+              averages: [],
+              maleAverages: [],
+              femaleAverages: [],
+            };
 
-          weakness,
+          current.failed.push(
+            Number(
+              metric.failedPercent ??
+                0
+            )
+          );
+
+          if (
+            metric.average
+          ) {
+            current.averages.push(
+              metric.average
+            );
+          }
+
+          if (
+            metric.maleAverage
+          ) {
+            current.maleAverages.push(
+              metric.maleAverage
+            );
+          }
+
+          if (
+            metric.femaleAverage
+          ) {
+            current.femaleAverages.push(
+              metric.femaleAverage
+            );
+          }
+
+          metricGroups.set(
+            label,
+            current
+          );
+        }
+      }
+
+      for (
+        const [
+          label,
+          group,
+        ] of
+        metricGroups.entries()
+      ) {
+        const failedAverage =
+          group.failed.length > 0
+            ? group.failed.reduce(
+                (sum, value) =>
+                  sum + value,
+                0
+              ) /
+              group.failed.length
+            : 0;
+
+        result[
+          `פרמטר: ${label}`
+        ] = {
+          failedPercent:
+            failedAverage,
+
+          average:
+            usesGenderSplit(
+              battalionName
+            ) &&
+            (
+              group.maleAverages.length >
+                0 ||
+              group.femaleAverages.length >
+                0
+            )
+              ? `ממוצעי צוערים: ${
+                  group.maleAverages
+                    .slice(-4)
+                    .join(" | ") ||
+                  "אין נתון"
+                } | ממוצעי צוערות: ${
+                  group.femaleAverages
+                    .slice(-4)
+                    .join(" | ") ||
+                  "אין נתון"
+                }`
+              : group.averages.length > 0
+              ? `ממוצעים שנקלטו: ${group.averages
+                  .slice(0, 4)
+                  .join(" | ")}`
+              : "ניתוח לפי אחוז אי־עמידה",
+        };
+      }
+
+      /*
+        3. מגמות בין מועדים
+      */
+      for (
+        const trend of
+        battalionIntelligence.trends
+      ) {
+        const latest =
+          latestResults.find(
+            (item) =>
+              item.testName ===
+              trend.testName
+          );
+
+        result[
+          `מגמה: ${trend.testName}`
+        ] = {
+          failedPercent:
+            latest?.failedPercent ??
+            0,
+
+          average:
+            `מ${attemptLabel(
+              trend.firstAttempt
+            )} ל${attemptLabel(
+              trend.latestAttempt
+            )}: שינוי בעוברים ${signedPoints(
+              trend.passedChange
+            )} נק׳ | שינוי בנכשלים ${signedPoints(
+              trend.failedChange
+            )} נק׳ | שינוי במצטיינים ${signedPoints(
+              trend.excellentChange
+            )} נק׳`,
         };
       }
 
       return result;
     }, [
-      latestRows,
+      latestResults,
+      testCards,
+      battalionIntelligence,
     ]);
+
+  async function runAiAnalysis() {
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/analysis",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                track:
+                  `${track} – גדוד ${battalionName}`,
+
+                overall: {
+                  passedPercent:
+                    averagePassed ?? 0,
+
+                  failedPercent:
+                    averageFailed ?? 0,
+
+                  excellentPercent:
+                    averageExcellent ?? 0,
+                },
+
+                metrics:
+                  aiMetrics,
+              }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.ok
+      ) {
+        throw new Error(
+          data?.message ??
+            "ניתוח AI נכשל"
+        );
+      }
+
+      setAiAnalysis(
+        data.analysis as
+          AiAnalysis
+      );
+    } catch (error) {
+      console.error(
+        "Battalion AI analysis error:",
+        error
+      );
+
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "אירעה שגיאה בניתוח AI"
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
 
   /* =======================================================
-     GLOBAL DASHBOARD
+     NOT FOUND
   ======================================================= */
 
-  const globalSummary =
-    useMemo(() => {
-      const summaries =
-        Object.values(
-          battalionSummaries
-        ).filter(
-          (item) =>
-            item.passedAverage !==
-            null
-        );
+  if (
+    tests.length ===
+    0
+  ) {
+    return (
+      <main
+        dir="rtl"
+        className="min-h-screen bg-slate-100 p-4 sm:p-8"
+      >
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-6 sm:p-10">
 
-      const completionValues =
-        Object.values(
-          battalionSummaries
-        ).map(
-          (item) =>
-            item.completionPercent
-        );
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            גדוד לא נמצא
+          </h1>
 
-      return {
-        passed:
-          average(
-            summaries
-              .map(
-                (item) =>
-                  item.passedAverage
-              )
-              .filter(
-                (
-                  value
-                ): value is number =>
-                  value !== null
-              )
-          ),
+          <p className="text-slate-500 mt-2">
+            לא הוגדרה כרגע תכנית
+            בחנים לגדוד{" "}
+            {battalionName}.
+          </p>
 
-        failed:
-          average(
-            summaries
-              .map(
-                (item) =>
-                  item.failedAverage
-              )
-              .filter(
-                (
-                  value
-                ): value is number =>
-                  value !== null
-              )
-          ),
+          <Link
+            href="/"
+            className="inline-block mt-6 bg-slate-900 text-white px-5 py-3 rounded-xl"
+          >
+            חזרה לדף הבית
+          </Link>
 
-        excellent:
-          average(
-            summaries
-              .map(
-                (item) =>
-                  item.excellentAverage
-              )
-              .filter(
-                (
-                  value
-                ): value is number =>
-                  value !== null
-              )
-          ),
-
-        completion:
-          average(
-            completionValues
-          ),
-      };
-    }, [
-      battalionSummaries,
-    ]);
+        </div>
+      </main>
+    );
+  }
 
   /* =======================================================
-     TOP WEAKNESSES
+     LOADING
   ======================================================= */
 
-  const interventionPoints =
-    useMemo(() => {
-      return Object.values(
-        battalionSummaries
-      )
-        .filter(
-          (
-            item
-          ): item is BattalionSummary & {
-            weakness: {
-              label: string;
-              failedPercent: number;
-            };
-          } =>
-            item.weakness !==
-            null &&
-            item.weakness
-              .failedPercent >
-              0
-        )
-        .sort(
-          (
-            a,
-            b
-          ) =>
-            b.weakness
-              .failedPercent -
-            a.weakness
-              .failedPercent
-        )
-        .slice(
-          0,
-          5
-        );
-    }, [
-      battalionSummaries,
-    ]);
+  if (
+    loading
+  ) {
+    return (
+      <main
+        dir="rtl"
+        className="min-h-screen bg-slate-100 flex items-center justify-center p-4"
+      >
+        <div className="bg-white rounded-2xl p-8 shadow-sm text-slate-700">
+          טוען נתוני אחוזים...
+        </div>
+      </main>
+    );
+  }
+
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
     <main
@@ -719,62 +1244,99 @@ export default function Home() {
       className="min-h-screen bg-slate-100 text-slate-900"
     >
 
-      {/* HEADER */}
+      {/* ===================================================
+          HEADER
+      =================================================== */}
 
-      <header className="bg-slate-950 text-white px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+      <header className="bg-slate-900 text-white px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
 
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div className="max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-5">
 
-          <div className="flex items-center gap-3">
+          <div>
 
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-lg sm:text-xl shadow-lg">
-              CF
+            <p className="text-slate-300">
+              {track}
+            </p>
+
+            <h1 className="text-3xl font-bold mt-1">
+              גדוד{" "}
+              {battalionName}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+
+              <span className="bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-sm">
+                מחזור:{" "}
+                <strong>
+                  {activeCycle?.name ??
+                    "נתונים קיימים"}
+                </strong>
+              </span>
+
+              {activeCycle && (
+                <span
+                  className={
+                    activeCycle.status ===
+                    "closed"
+                      ? "bg-amber-500/20 border border-amber-400/20 text-amber-100 rounded-lg px-3 py-1.5 text-sm"
+                      : "bg-green-500/20 border border-green-400/20 text-green-100 rounded-lg px-3 py-1.5 text-sm"
+                  }
+                >
+                  {activeCycle.status ===
+                  "closed"
+                    ? "🔒 מחזור סגור"
+                    : "● מחזור פעיל"}
+                </span>
+              )}
+
             </div>
 
-            <div>
-
-              <h1 className="text-2xl sm:text-3xl font-black">
-                CommandFit
-              </h1>
-
-              <p className="text-slate-400 text-sm mt-1">
-                מערכת ניהול ובקרת הכשירות הגופנית
-              </p>
-
-            </div>
+            <p className="text-slate-400 text-sm mt-3">
+              CommandFit – תמונת מצב
+              מצרפית באחוזים בלבד
+            </p>
 
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* =================================================
+              MAIN NAVIGATION
+          ================================================= */}
 
-            {!authLoading &&
-              user && (
-              <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full md:w-auto">
 
-                <span className="text-slate-400">
-                  מחובר כ־
-                </span>
-
-                <strong>
-                  {isAdmin
-                    ? "מנהל"
-                    : isViewer
-                    ? "צפייה בלבד"
-                    : user.username}
-                </strong>
-
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={
-                logout
-              }
-              className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/10 px-5 py-3 rounded-xl font-medium transition"
+            <Link
+              href={`/battalions/${encodeURIComponent(
+                battalionName
+              )}/cadets`}
+              className="bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
             >
-              התנתקות
-            </button>
+              📈 הזנת נתונים
+            </Link>
+
+            <Link
+              href={`/battalions/${encodeURIComponent(
+                battalionName
+              )}/summary`}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
+            >
+              📊 סיכום באחוזים
+            </Link>
+
+            <Link
+              href={`/battalions/${encodeURIComponent(
+                battalionName
+              )}/training-plan`}
+              className="bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-medium shadow-sm text-center transition"
+            >
+              📅 תוכנית אימונים
+            </Link>
+
+            <Link
+              href="/"
+              className="bg-white/10 hover:bg-white/20 px-5 py-3 rounded-xl text-center transition"
+            >
+              חזרה לדף הבית
+            </Link>
 
           </div>
 
@@ -782,263 +1344,645 @@ export default function Home() {
 
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1500px] mx-auto p-4 sm:p-6 md:p-8">
 
-        {/* TITLE */}
+        {/* =================================================
+            SECURITY
+        ================================================= */}
 
-        <section className="mb-7 sm:mb-10">
-
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            לוח בקרה
-          </h2>
-
-          <p className="text-slate-500 mt-2">
-            תמונת מצב מרכזית באחוזים וממוצעים בלבד
-          </p>
-
-        </section>
-
-{/* ADMIN TOOLS */}
-
-
-<NotificationsPanel />
-        
-        {/* SECURITY */}
-
-        <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-7">
+        <section className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-5 mb-6">
 
           <p className="font-bold text-blue-900">
-            🔒 תצוגה מצרפית בלבד
+            🔒 נתונים מצרפיים בלבד
           </p>
 
-          <p className="text-sm text-blue-800 mt-1">
-            ללא שמות, ללא מספרי צוערים וללא נתוני כוח אדם מספריים.
+          <p className="text-sm text-blue-800 mt-1 leading-6">
+            במסך זה לא מוצגים שמות,
+            מספרי צוערים, מספר נבחנים
+            או תיק אישי. כל הנתונים
+            מוצגים באחוזים בלבד.
           </p>
 
         </section>
 
-        {/* DASHBOARD CARDS */}
+        {/* =================================================
+            NOTIFICATIONS
+        ================================================= */}
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8 sm:mb-10">
+        <NotificationsPanel
+          battalion={
+            battalionName
+          }
+          compact
+        />
 
-          <DashboardCard
+        {/* =================================================
+            KPI
+        ================================================= */}
+
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+
+          <PercentKpi
             title="ממוצע עוברים"
             value={
-              dataLoading
-                ? "..."
-                : formatPercent(
-                    globalSummary.passed
-                  )
+              formatPercent(
+                averagePassed
+              )
             }
             tone="success"
           />
 
-          <DashboardCard
+          <PercentKpi
             title="ממוצע נכשלים"
             value={
-              dataLoading
-                ? "..."
-                : formatPercent(
-                    globalSummary.failed
-                  )
+              formatPercent(
+                averageFailed
+              )
             }
             tone="danger"
           />
 
-          <DashboardCard
+          <PercentKpi
             title="ממוצע מצטיינים"
             value={
-              dataLoading
-                ? "..."
-                : formatPercent(
-                    globalSummary.excellent
-                  )
+              formatPercent(
+                averageExcellent
+              )
             }
             tone="excellent"
           />
 
-          <DashboardCard
-            title="השלמת הזנת נתונים"
-            value={
-              dataLoading
-                ? "..."
-                : formatPercent(
-                    globalSummary.completion
+        </section>
+
+        {usesGenderSplit(
+          battalionName
+        ) && (
+          <section className="bg-white rounded-3xl shadow-sm p-5 sm:p-6 mb-8">
+            <div>
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">
+                ממוצעים לפי מגדר
+              </p>
+
+              <h2 className="text-xl sm:text-2xl font-black mt-1">
+                צוערים וצוערות – ממוצעי מרכיבי הבוחן
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                הנתונים נמשכים אוטומטית מהמועד האחרון שנשמר לכל מרכיב.
+              </p>
+            </div>
+
+            {genderMetricSummary.length >
+            0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
+                {genderMetricSummary.map(
+                  (metric) => (
+                    <div
+                      key={
+                        metric.label
+                      }
+                      className="border border-slate-200 rounded-2xl p-4"
+                    >
+                      <p className="font-black text-lg">
+                        {metric.label}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-blue-700">
+                            ממוצע צוערים
+                          </p>
+                          <p className="text-xl font-black mt-1">
+                            {metric.male ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-fuchsia-700">
+                            ממוצע צוערות
+                          </p>
+                          <p className="text-xl font-black mt-1">
+                            {metric.female ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-red-700">
+                            מספר נכשלים
+                          </p>
+                          <p className="text-xl font-black mt-1 text-red-700">
+                            {metric.failedCount ??
+                              "אין נתון"}
+                          </p>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                          <p className="text-xs font-bold text-amber-700">
+                            אחוז נכשלים
+                          </p>
+                          <p className="text-xl font-black mt-1 text-amber-700">
+                            {metric.failedPercent !==
+                            null
+                              ? formatPercent(
+                                  metric.failedPercent
+                                )
+                              : "אין נתון"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mt-5 text-slate-500 text-center">
+                טרם הוזנו ממוצעי צוערים וצוערות בנפרד
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================
+            COMMAND INTELLIGENCE
+        ================================================= */}
+
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+          <CommanderInsightCard
+            title="מוקד מרכזי"
+            value={
+              battalionIntelligence
+                .weakestTest
+                ? battalionIntelligence
+                    .weakestTest
+                    .testName
+                : "אין מספיק נתונים"
             }
-            tone="neutral"
+            subtitle={
+              battalionIntelligence
+                .weakestTest
+                ? `${formatPercent(
+                    battalionIntelligence
+                      .weakestTest
+                      .failedPercent
+                  )} נכשלים במועד האחרון`
+                : "נדרש להזין תוצאות"
+            }
+            tone="danger"
+          />
+
+          <CommanderInsightCard
+            title="בוחן חזק"
+            value={
+              battalionIntelligence
+                .strongestTest
+                ? battalionIntelligence
+                    .strongestTest
+                    .testName
+                : "אין מספיק נתונים"
+            }
+            subtitle={
+              battalionIntelligence
+                .strongestTest
+                ? `${formatPercent(
+                    battalionIntelligence
+                      .strongestTest
+                      .passedPercent
+                  )} עוברים במועד האחרון`
+                : "נדרש להזין תוצאות"
+            }
+            tone="success"
+          />
+
+          <CommanderInsightCard
+            title="השיפור הגדול ביותר"
+            value={
+              battalionIntelligence
+                .biggestImprovement
+                ? battalionIntelligence
+                    .biggestImprovement
+                    .testName
+                : "אין עדיין השוואה"
+            }
+            subtitle={
+              battalionIntelligence
+                .biggestImprovement
+                ? `${signedPoints(
+                    battalionIntelligence
+                      .biggestImprovement
+                      .passedChange
+                  )} נק׳ באחוז העוברים`
+                : "נדרשים לפחות שני מועדים"
+            }
+            tone="info"
+          />
+
+          <CommanderInsightCard
+            title="דורש מעקב"
+            value={
+              battalionIntelligence
+                .biggestDecline
+                ? battalionIntelligence
+                    .biggestDecline
+                    .testName
+                : "אין ירידה מזוהה"
+            }
+            subtitle={
+              battalionIntelligence
+                .biggestDecline
+                ? `${signedPoints(
+                    battalionIntelligence
+                      .biggestDecline
+                      .passedChange
+                  )} נק׳ באחוז העוברים`
+                : "המגמות הקיימות יציבות/חיוביות"
+            }
+            tone="warning"
           />
 
         </section>
 
-        {/* UNIFIED CALENDAR */}
+        {/* =================================================
+            COMMANDER AI
+        ================================================= */}
 
-        <section className="bg-gradient-to-l from-blue-950 to-slate-900 text-white rounded-3xl shadow-sm p-5 sm:p-7 mb-8">
+        <section className="bg-gradient-to-l from-indigo-950 to-slate-900 text-white rounded-3xl shadow-sm p-5 sm:p-7 mb-8">
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
 
             <div>
 
-              <p className="text-xs font-bold text-blue-300 uppercase tracking-wide">
-                CommandFit Calendar
+              <p className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+                CommandFit AI
               </p>
 
               <h2 className="text-2xl font-black mt-1">
-                📅 לוח בחנים אחוד
+                ✨ AI למפקד גדוד {battalionName}
               </h2>
 
               <p className="text-slate-300 mt-2 max-w-3xl">
-                תכנון כלל הבחנים של גדודי בה״ד 1 במקום אחד, כולל זיהוי עומסים וחפיפות, סינון לפי מגמה וגדוד וייצוא לאקסל ולקלנדר בפלאפון.
+                ניתוח ממוקד של גדוד {battalionName} בלבד — השוואה בין מועדים, זיהוי שיפור וירידה, בחנים חלשים, מוקדי אי־עמידה והמלצות ממוקדות להמשך האימונים.
               </p>
 
             </div>
 
-            <Link
-              href="/calendar"
-              className="w-full lg:w-auto bg-white text-slate-950 hover:bg-blue-50 rounded-xl px-6 py-3 font-black text-center transition"
+            <button
+              type="button"
+              onClick={
+                runAiAnalysis
+              }
+              disabled={
+                aiLoading ||
+                latestResults.length === 0
+              }
+              className="w-full lg:w-auto bg-white text-slate-950 hover:bg-indigo-50 rounded-xl px-6 py-3 font-black disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              📅 פתח לוח בחנים
-            </Link>
+              {aiLoading
+                ? "מנתח את נתוני הגדוד..."
+                : aiAnalysis
+                ? "🔄 ניתוח מחדש"
+                : "✨ נתח את הגדוד באמצעות AI"}
+            </button>
 
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 text-sm">
-
-            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-              <p className="font-bold">🟢 ניהול עומסים</p>
-              <p className="text-slate-300 mt-1">זיהוי אוטומטי של בחנים מקבילים ועומס יומי.</p>
+          {aiError && (
+            <div className="bg-red-500/10 border border-red-400/20 text-red-100 rounded-xl p-4 mt-5">
+              {aiError}
             </div>
+          )}
 
-            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-              <p className="font-bold">🏃 כלל הגדודים</p>
-              <p className="text-slate-300 mt-1">לוח אחוד למגמת לוחמים ולמגמת מטה.</p>
+          {!aiAnalysis &&
+            !aiError && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mt-5 text-slate-300 text-sm">
+              לחץ על „נתח את הגדוד באמצעות AI” לקבלת תמונת מצב, חוזקות, מוקדי חולשה, מגמות והמלצות לפעולה המבוססות על הנתונים של גדוד {battalionName}.
             </div>
+          )}
 
-            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-              <p className="font-bold">📱 ייצוא ושיתוף</p>
-              <p className="text-slate-300 mt-1">ייצוא לאקסל ולקלנדר האישי בפלאפון.</p>
+          {aiAnalysis && (
+            <div className="mt-6 space-y-4">
+
+              <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
+                <p className="text-xs text-indigo-200 font-bold">
+                  תמונת מצב גדודית
+                </p>
+
+                <p className="text-lg font-bold mt-2 leading-8">
+                  {aiAnalysis.summary}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <BattalionAiListCard
+                  title="חוזקות"
+                  items={
+                    aiAnalysis.strengths
+                  }
+                  icon="✅"
+                />
+
+                <BattalionAiListCard
+                  title="מוקדי חולשה"
+                  items={
+                    aiAnalysis.weaknesses
+                  }
+                  icon="⚠️"
+                />
+
+                <BattalionAiListCard
+                  title="מגמות"
+                  items={
+                    aiAnalysis.trends
+                  }
+                  icon="📈"
+                />
+
+                <BattalionAiListCard
+                  title="המלצות לפעולה"
+                  items={
+                    aiAnalysis.recommendations
+                  }
+                  icon="🎯"
+                />
+
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-300/20 rounded-2xl p-5">
+                <p className="text-xs text-indigo-200 font-bold">
+                  מסר למפקד גדוד {battalionName}
+                </p>
+
+                <p className="mt-2 font-bold leading-7">
+                  {aiAnalysis.commanderMessage}
+                </p>
+              </div>
+
             </div>
+          )}
+
+        </section>
+
+        {/* =================================================
+            BATTALION PROGRESS
+        ================================================= */}
+
+        <section className="bg-gradient-to-l from-slate-900 to-slate-800 text-white rounded-3xl p-5 sm:p-7 mb-8 shadow-sm">
+
+          <div>
+
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              תמונת מצב גדודית
+            </h2>
+
+            <p className="text-slate-300 mt-1">
+              התקדמות בכל בוחן בנפרד לפי מועדים — אחוזי עוברים, נכשלים ומצטיינים.
+            </p>
+
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+
+            {testCards.map(
+              (item) => (
+                <TestProgressChart
+                  key={item.test.id}
+                  testName={item.test.name}
+                  attempts={item.attempts}
+                />
+              )
+            )}
 
           </div>
 
         </section>
 
-        {/* INTERVENTION POINTS */}
+        {/* =================================================
+            TESTS
+        ================================================= */}
 
+        <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-6 mb-8">
 
-        {interventionPoints.length >
-          0 && (
-          <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-6 mb-8">
+          <div>
 
-            <div className="mb-5">
+            <h2 className="text-2xl font-bold">
+              מסלול הבחנים
+            </h2>
 
-              <p className="text-xs font-bold text-red-700 uppercase tracking-wide">
-                תמונת מצב
-              </p>
+            <p className="text-slate-500 mt-1">
+              בכל בוחן מוצגים אחוז
+              מעבר, כישלון והצטיינות
+              בלבד.
+            </p>
 
-              <h2 className="text-xl sm:text-2xl font-bold mt-1">
-                מוקדי התערבות
-              </h2>
+          </div>
 
-              <p className="text-sm text-slate-500 mt-1">
-                הפרמטרים עם אחוז אי־העמידה הגבוה ביותר כרגע
-              </p>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 ${
+              tests.length >=
+              4
+                ? "xl:grid-cols-4"
+                : "xl:grid-cols-3"
+            } gap-4 mt-6`}
+          >
 
-            </div>
+            {testCards.map(
+              (
+                item,
+                index
+              ) => (
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                <div
+                  key={
+                    item.test.id
+                  }
+                  className="border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white"
+                >
 
-              {interventionPoints.map(
-                (item) => (
+                  <div className="flex items-start justify-between gap-3">
+
+                    <div>
+
+                      <p className="text-sm text-slate-500">
+                        שלב{" "}
+                        {index +
+                          1}
+                      </p>
+
+                      <h3 className="font-bold text-xl mt-1">
+                        {
+                          item.test
+                            .name
+                        }
+                      </h3>
+
+                    </div>
+
+                    {item.latest && (
+                      <span className="bg-slate-100 rounded-lg px-3 py-1 text-xs font-medium">
+                        {attemptLabel(
+                          item
+                            .latest
+                            .attempt
+                        )}
+                      </span>
+                    )}
+
+                  </div>
+
+                  <p className="text-sm text-slate-500 mt-3 min-h-[40px]">
+                    {
+                      item.test
+                        .description
+                    }
+                  </p>
+
+                  {item.latest ? (
+
+                    <div className="grid grid-cols-3 gap-2 mt-5">
+
+                      <MiniPercent
+                        title="עברו"
+                        value={
+                          item.latest
+                            .passedPercent
+                        }
+                        tone="success"
+                      />
+
+                      <MiniPercent
+                        title="נכשלו"
+                        value={
+                          item.latest
+                            .failedPercent
+                        }
+                        tone="danger"
+                      />
+
+                      <MiniPercent
+                        title="מצטיינים"
+                        value={
+                          item.latest
+                            .excellentPercent
+                        }
+                        tone="excellent"
+                      />
+
+                    </div>
+
+                  ) : (
+
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-slate-400 text-sm mt-5 text-center">
+                      טרם הוזנו נתונים
+                    </div>
+
+                  )}
 
                   <Link
-                    key={
-                      item.battalion
-                    }
                     href={`/battalions/${encodeURIComponent(
-                      item.battalion
-                    )}`}
-                    className="border border-red-100 bg-red-50 rounded-2xl p-4 hover:bg-red-100 transition"
+                      battalionName
+                    )}/cadets`}
+                    className="block mt-5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-center font-medium transition"
                   >
-
-                    <p className="text-sm font-bold text-slate-900">
-                      גדוד{" "}
-                      {item.battalion}
-                    </p>
-
-                    <p className="text-sm text-slate-600 mt-2">
-                      {
-                        item.weakness
-                          .label
-                      }
-                    </p>
-
-                    <p className="text-2xl font-black text-red-700 mt-1">
-                      {formatPercent(
-                        item.weakness
-                          .failedPercent
-                      )}
-                    </p>
-
-                    <p className="text-xs text-red-600 mt-1">
-                      אי־עמידה
-                    </p>
-
+                    הזנת / עדכון נתונים
                   </Link>
 
-                )
-              )}
+                </div>
 
-            </div>
+              )
+            )}
 
-          </section>
-        )}
+          </div>
 
-        {/* INFANTRY COMPLETION */}
+        </section>
 
-        <TrackSection
-          title="השלמה חילית חי״ר"
-          subtitle="תמונת מצב גדודית – אחוזים, ממוצעים ומוקדי חולשה"
-          battalions={
-            infantryCompletion
-          }
-          variant="dark"
-          summaries={
-            battalionSummaries
-          }
-        />
+        {/* =================================================
+            QUICK ACTIONS
+        ================================================= */}
 
-        {/* FIGHTERS */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        <TrackSection
-          title="מגמת לוחמים"
-          subtitle="תמונת מצב גדודית – אחוזים, ממוצעים ומוקדי חולשה"
-          battalions={
-            fighters
-          }
-          variant="dark"
-          summaries={
-            battalionSummaries
-          }
-        />
+          <Link
+            href={`/battalions/${encodeURIComponent(
+              battalionName
+            )}/cadets`}
+            className="bg-green-50 border border-green-100 rounded-3xl p-6 hover:bg-green-100 transition"
+          >
 
-        {/* STAFF */}
+            <p className="text-sm text-green-700 font-bold">
+              הזנה
+            </p>
 
-        <TrackSection
-          title="מגמת מטה"
-          subtitle="תמונת מצב גדודית – אחוזים, ממוצעים ומוקדי חולשה"
-          battalions={
-            staff
-          }
-          variant="staff"
-          summaries={
-            battalionSummaries
-          }
-        />
+            <h2 className="text-2xl font-bold text-green-900 mt-1">
+              הזנת אחוזי ביצוע
+            </h2>
 
-        {dataMessage && (
+            <p className="text-green-800 text-sm mt-2">
+              הזנת אחוז מעבר ואחוז
+              מצטיינים. אחוז הכישלון
+              מחושב אוטומטית.
+            </p>
+
+          </Link>
+
+          <Link
+            href={`/battalions/${encodeURIComponent(
+              battalionName
+            )}/summary`}
+            className="bg-blue-50 border border-blue-100 rounded-3xl p-6 hover:bg-blue-100 transition"
+          >
+
+            <p className="text-sm text-blue-700 font-bold">
+              ניתוח
+            </p>
+
+            <h2 className="text-2xl font-bold text-blue-900 mt-1">
+              סיכום גדודי באחוזים
+            </h2>
+
+            <p className="text-blue-800 text-sm mt-2">
+              צפייה בהיסטוריית
+              המועדים ובמגמות הביצוע
+              ללא מידע אישי.
+            </p>
+
+          </Link>
+
+          <Link
+            href={`/battalions/${encodeURIComponent(
+              battalionName
+            )}/training-plan`}
+            className="bg-violet-50 border border-violet-100 rounded-3xl p-6 hover:bg-violet-100 transition"
+          >
+
+            <p className="text-sm text-violet-700 font-bold">
+              תכנון
+            </p>
+
+            <h2 className="text-2xl font-bold text-violet-900 mt-1">
+              📅 תוכנית אימונים
+            </h2>
+
+            <p className="text-violet-800 text-sm mt-2">
+              תכנון האימונים לפי
+              שבועות, מעקב ביצוע
+              והתראות על עומס אימונים
+              נמוך.
+            </p>
+
+          </Link>
+
+        </section>
+
+        {/* =================================================
+            MESSAGE
+        ================================================= */}
+
+        {message && (
           <section className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 mt-8">
-            {dataMessage}
+            {message}
           </section>
         )}
 
@@ -1049,353 +1993,513 @@ export default function Home() {
 }
 
 /* =========================================================
-   TRACK SECTION
+   COMPONENTS
 ========================================================= */
 
-function TrackSection({
+function CommanderInsightCard({
   title,
+  value,
   subtitle,
-  battalions,
-  variant,
-  summaries,
+  tone,
 }: {
   title: string;
+  value: string;
   subtitle: string;
-  battalions:
-    string[];
-
-  variant:
-    | "dark"
-    | "light"
-    | "staff";
-
-  summaries:
-    Record<
-      string,
-      BattalionSummary
-    >;
+  tone:
+    | "success"
+    | "danger"
+    | "warning"
+    | "info";
 }) {
+  const styles = {
+    success:
+      "bg-green-50 border-green-100 text-green-950",
+    danger:
+      "bg-red-50 border-red-100 text-red-950",
+    warning:
+      "bg-amber-50 border-amber-100 text-amber-950",
+    info:
+      "bg-blue-50 border-blue-100 text-blue-950",
+  };
+
   return (
-    <section className="bg-white rounded-3xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+    <div
+      className={`border rounded-2xl p-5 shadow-sm ${styles[tone]}`}
+    >
+      <p className="text-xs font-bold opacity-70">
+        {title}
+      </p>
 
-      <div className="mb-5">
+      <p className="text-xl font-black mt-2">
+        {value}
+      </p>
 
-        <p
-          className={
-            variant ===
-            "dark"
-              ? "text-xs font-bold text-blue-700 uppercase tracking-wide"
-              : variant ===
-                "staff"
-              ? "text-xs font-bold text-blue-800 uppercase tracking-wide"
-              : "text-xs font-bold text-violet-700 uppercase tracking-wide"
-          }
-        >
-          מגמה
-        </p>
-
-        <h2 className="text-xl sm:text-2xl font-bold mt-1">
-          {title}
-        </h2>
-
-        <p className="text-sm text-slate-500 mt-1">
-          {subtitle}
-        </p>
-
-      </div>
-
-      <div
-        className={`grid grid-cols-1 sm:grid-cols-2 ${
-          battalions.length >=
-          5
-            ? "xl:grid-cols-5"
-            : "xl:grid-cols-4"
-        } gap-3 sm:gap-4`}
-      >
-
-        {battalions.map(
-          (
-            battalion
-          ) => (
-
-            <BattalionCard
-              key={
-                battalion
-              }
-              battalion={
-                battalion
-              }
-              variant={
-                variant
-              }
-              summary={
-                summaries[
-                  battalion
-                ]
-              }
-            />
-
-          )
-        )}
-
-      </div>
-
-    </section>
+      <p className="text-sm mt-2 opacity-80 leading-6">
+        {subtitle}
+      </p>
+    </div>
   );
 }
 
-/* =========================================================
-   BATTALION CARD
-========================================================= */
 
-function BattalionCard({
-  battalion,
-  variant,
-  summary,
+
+function BattalionAiListCard({
+  title,
+  items,
+  icon,
 }: {
-  battalion: string;
-
-  variant:
-    | "dark"
-    | "light"
-    | "staff";
-
-  summary?:
-    BattalionSummary;
+  title: string;
+  items: string[];
+  icon: string;
 }) {
-  const dark =
-    variant ===
-    "dark";
+  return (
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-5">
 
-  const staff =
-    variant ===
-    "staff";
+      <p className="font-black">
+        {icon} {title}
+      </p>
+
+      {items.length > 0 ? (
+        <ul className="space-y-2 mt-3 text-sm text-slate-200">
+
+          {items.map(
+            (
+              item,
+              index
+            ) => (
+              <li
+                key={`${title}-${index}`}
+                className="leading-6"
+              >
+                • {item}
+              </li>
+            )
+          )}
+
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-400 mt-3">
+          אין מספיק נתונים.
+        </p>
+      )}
+
+    </div>
+  );
+}
+
+
+function TestProgressChart({
+  testName,
+  attempts,
+}: {
+  testName: string;
+  attempts: PercentageResult[];
+}) {
+  const width = 600;
+  const height = 260;
+
+  const padding = {
+    top: 24,
+    right: 24,
+    bottom: 52,
+    left: 48,
+  };
+
+  const plotWidth =
+    width -
+    padding.left -
+    padding.right;
+
+  const plotHeight =
+    height -
+    padding.top -
+    padding.bottom;
+
+  const orderedAttempts =
+    [...attempts].sort(
+      (a, b) =>
+        a.attempt -
+        b.attempt
+    );
+
+  function xForIndex(
+    index: number
+  ) {
+    if (
+      orderedAttempts.length <=
+      1
+    ) {
+      return (
+        padding.left +
+        plotWidth / 2
+      );
+    }
+
+    return (
+      padding.left +
+      (
+        index /
+        (
+          orderedAttempts.length -
+          1
+        )
+      ) *
+        plotWidth
+    );
+  }
+
+  function yForPercent(
+    value: number
+  ) {
+    const safeValue =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          value
+        )
+      );
+
+    return (
+      padding.top +
+      (
+        1 -
+        safeValue /
+          100
+      ) *
+        plotHeight
+    );
+  }
+
+  function pointsFor(
+    key:
+      | "passedPercent"
+      | "failedPercent"
+      | "excellentPercent"
+  ) {
+    return orderedAttempts
+      .map(
+        (
+          item,
+          index
+        ) =>
+          `${xForIndex(
+            index
+          )},${yForPercent(
+            item[key]
+          )}`
+      )
+      .join(" ");
+  }
+
+  const yTicks = [
+    0,
+    25,
+    50,
+    75,
+    100,
+  ];
 
   return (
-    <Link
-      href={`/battalions/${encodeURIComponent(
-        battalion
-      )}`}
-      className={
-        dark
-          ? "group rounded-2xl bg-slate-900 px-4 py-5 text-white transition hover:bg-slate-800 active:scale-[0.98]"
-          : staff
-          ? "group rounded-2xl border-2 border-blue-700 bg-blue-950 px-4 py-5 text-white shadow-sm transition hover:bg-blue-900 hover:border-blue-500 active:scale-[0.98]"
-          : "group rounded-2xl border-2 border-slate-200 bg-white px-4 py-5 transition hover:bg-slate-50 hover:border-violet-200 active:scale-[0.98]"
-      }
-    >
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-4 sm:p-5">
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-        <span
-          className={
-            dark || staff
-              ? "text-2xl font-black text-white"
-              : "text-2xl font-black text-slate-900"
-          }
-        >
-          {battalion}
-        </span>
-
-        <span
-          className={
-            dark
-              ? "text-xs text-slate-400"
-              : staff
-              ? "text-xs text-blue-200"
-              : "text-xs text-slate-400"
-          }
-        >
-          כניסה ←
-        </span>
-
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mt-5">
-
-        <MiniStat
-          title="עוברים"
-          value={
-            formatPercent(
-              summary?.passedAverage ??
-                null
-            )
-          }
-          tone="success"
-          dark={
-            dark || staff
-          }
-        />
-
-        <MiniStat
-          title="נכשלים"
-          value={
-            formatPercent(
-              summary?.failedAverage ??
-                null
-            )
-          }
-          tone="danger"
-          dark={
-            dark || staff
-          }
-        />
-
-        <MiniStat
-          title="מצטיינים"
-          value={
-            formatPercent(
-              summary?.excellentAverage ??
-                null
-            )
-          }
-          tone="excellent"
-          dark={
-            dark || staff
-          }
-        />
-
-      </div>
-
-      <div
-        className={
-          dark || staff
-            ? "border-t border-white/15 mt-4 pt-4"
-            : "border-t border-slate-100 mt-4 pt-4"
-        }
-      >
-
-        {summary?.weakness ? (
-
-          <>
-            <p
-              className={
-                dark
-                  ? "text-xs text-slate-400"
-                  : staff
-                  ? "text-xs text-blue-200"
-                  : "text-xs text-slate-500"
-              }
-            >
-              מוקד לשיפור
-            </p>
-
-            <div className="flex items-center justify-between gap-3 mt-1">
-
-              <span className="text-sm font-bold">
-                {
-                  summary.weakness
-                    .label
-                }
-              </span>
-
-              <span className="text-sm font-black text-red-500">
-                {formatPercent(
-                  summary.weakness
-                    .failedPercent
-                )}
-              </span>
-
-            </div>
-          </>
-
-        ) : (
-
-          <p
-            className={
-              dark
-                ? "text-xs text-slate-500"
-                : staff
-                ? "text-xs text-blue-300"
-                : "text-xs text-slate-400"
-            }
-          >
-            טרם הוזנו נתוני פרמטרים
+        <div>
+          <p className="text-xs text-slate-400">
+            בוחן
           </p>
 
-        )}
+          <h3 className="text-xl font-bold mt-1">
+            {testName}
+          </h3>
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-xs">
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-green-400" />
+            עוברים
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-red-400" />
+            נכשלים
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-sky-400" />
+            מצטיינים
+          </span>
+
+        </div>
 
       </div>
 
-    </Link>
+      {orderedAttempts.length === 0 ? (
+
+        <div className="border border-white/10 bg-white/5 rounded-xl p-8 text-center text-slate-400 mt-5">
+          טרם הוזנו נתונים לבוחן זה
+        </div>
+
+      ) : (
+
+        <>
+          <div className="w-full overflow-x-auto mt-5">
+
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="w-full min-w-[520px] h-auto"
+              role="img"
+              aria-label={`גרף התקדמות ${testName}`}
+            >
+
+              {yTicks.map(
+                (tick) => {
+                  const y =
+                    yForPercent(
+                      tick
+                    );
+
+                  return (
+                    <g
+                      key={
+                        tick
+                      }
+                    >
+                      <line
+                        x1={
+                          padding.left
+                        }
+                        x2={
+                          width -
+                          padding.right
+                        }
+                        y1={y}
+                        y2={y}
+                        stroke="rgba(255,255,255,0.12)"
+                        strokeWidth="1"
+                      />
+
+                      <text
+                        x={
+                          padding.left -
+                          10
+                        }
+                        y={
+                          y + 4
+                        }
+                        textAnchor="end"
+                        fontSize="12"
+                        fill="rgba(226,232,240,0.8)"
+                      >
+                        {tick}%
+                      </text>
+                    </g>
+                  );
+                }
+              )}
+
+              <line
+                x1={padding.left}
+                x2={padding.left}
+                y1={padding.top}
+                y2={
+                  height -
+                  padding.bottom
+                }
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="1"
+              />
+
+              <line
+                x1={padding.left}
+                x2={
+                  width -
+                  padding.right
+                }
+                y1={
+                  height -
+                  padding.bottom
+                }
+                y2={
+                  height -
+                  padding.bottom
+                }
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="1"
+              />
+
+              {orderedAttempts.length >
+                1 && (
+                <>
+                  <polyline
+                    points={pointsFor(
+                      "passedPercent"
+                    )}
+                    fill="none"
+                    stroke="#4ade80"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <polyline
+                    points={pointsFor(
+                      "failedPercent"
+                    )}
+                    fill="none"
+                    stroke="#f87171"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <polyline
+                    points={pointsFor(
+                      "excellentPercent"
+                    )}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </>
+              )}
+
+              {orderedAttempts.map(
+                (
+                  item,
+                  index
+                ) => {
+                  const x =
+                    xForIndex(
+                      index
+                    );
+
+                  return (
+                    <g
+                      key={
+                        item.attempt
+                      }
+                    >
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.passedPercent
+                        )}
+                        r="6"
+                        fill="#4ade80"
+                      />
+
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.failedPercent
+                        )}
+                        r="6"
+                        fill="#f87171"
+                      />
+
+                      <circle
+                        cx={x}
+                        cy={yForPercent(
+                          item.excellentPercent
+                        )}
+                        r="6"
+                        fill="#38bdf8"
+                      />
+
+                      <text
+                        x={x}
+                        y={
+                          height -
+                          20
+                        }
+                        textAnchor="middle"
+                        fontSize="12"
+                        fill="rgba(226,232,240,0.9)"
+                      >
+                        {attemptLabel(
+                          item.attempt
+                        )}
+                      </text>
+                    </g>
+                  );
+                }
+              )}
+
+            </svg>
+
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+
+            <div className="bg-green-400/10 border border-green-400/20 rounded-xl p-3">
+              <p className="text-xs text-green-200">
+                עוברים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-green-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].passedPercent
+                )}
+              </p>
+            </div>
+
+            <div className="bg-red-400/10 border border-red-400/20 rounded-xl p-3">
+              <p className="text-xs text-red-200">
+                נכשלים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-red-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].failedPercent
+                )}
+              </p>
+            </div>
+
+            <div className="bg-sky-400/10 border border-sky-400/20 rounded-xl p-3">
+              <p className="text-xs text-sky-200">
+                מצטיינים – מועד אחרון
+              </p>
+              <p className="text-xl font-bold text-sky-300 mt-1">
+                {formatPercent(
+                  orderedAttempts[
+                    orderedAttempts.length -
+                      1
+                  ].excellentPercent
+                )}
+              </p>
+            </div>
+
+          </div>
+        </>
+
+      )}
+
+    </div>
   );
 }
 
-/* =========================================================
-   MINI STAT
-========================================================= */
-
-function MiniStat({
+function PercentKpi({
   title,
   value,
   tone,
-  dark,
 }: {
   title: string;
+
   value: string;
 
   tone:
     | "success"
     | "danger"
     | "excellent";
-
-  dark: boolean;
-}) {
-  const toneClass =
-    tone ===
-    "success"
-      ? "text-green-500"
-      : tone ===
-        "danger"
-      ? "text-red-500"
-      : "text-sky-500";
-
-  return (
-    <div
-      className={
-        dark
-          ? "bg-white/5 rounded-xl p-2.5 text-center"
-          : "bg-slate-50 rounded-xl p-2.5 text-center"
-      }
-    >
-
-      <p
-        className={
-          dark
-            ? "text-[10px] text-slate-400"
-            : "text-[10px] text-slate-500"
-        }
-      >
-        {title}
-      </p>
-
-      <p
-        className={`text-base sm:text-lg font-black mt-1 ${toneClass}`}
-      >
-        {value}
-      </p>
-
-    </div>
-  );
-}
-
-/* =========================================================
-   DASHBOARD CARD
-========================================================= */
-
-function DashboardCard({
-  title,
-  value,
-  tone,
-}: {
-  title: string;
-  value: string;
-
-  tone:
-    | "success"
-    | "danger"
-    | "excellent"
-    | "neutral";
 }) {
   const styles = {
     success:
@@ -1405,23 +2509,64 @@ function DashboardCard({
       "bg-red-50 border-red-100 text-red-700",
 
     excellent:
-      "bg-sky-50 border-sky-100 text-sky-700",
-
-    neutral:
-      "bg-white border-slate-200 text-slate-900",
+      "bg-sky-50 border-sky-200 text-sky-700",
   };
 
   return (
     <div
-      className={`border rounded-2xl shadow-sm p-4 sm:p-5 ${styles[tone]}`}
+      className={`border rounded-3xl p-5 sm:p-6 ${styles[tone]}`}
     >
 
-      <p className="text-xs sm:text-sm opacity-80">
+      <p className="text-sm font-bold">
         {title}
       </p>
 
-      <p className="text-2xl sm:text-4xl font-black mt-2">
+      <p className="text-4xl sm:text-5xl font-bold mt-2">
         {value}
+      </p>
+
+    </div>
+  );
+}
+
+function MiniPercent({
+  title,
+  value,
+  tone,
+}: {
+  title: string;
+
+  value: number;
+
+  tone:
+    | "success"
+    | "danger"
+    | "excellent";
+}) {
+  const styles = {
+    success:
+      "bg-green-50 text-green-700",
+
+    danger:
+      "bg-red-50 text-red-700",
+
+    excellent:
+      "bg-sky-50 text-sky-700",
+  };
+
+  return (
+    <div
+      className={`rounded-xl p-3 text-center ${styles[tone]}`}
+    >
+
+      <p className="text-[11px] font-bold">
+        {title}
+      </p>
+
+      <p className="text-lg sm:text-xl font-bold mt-1">
+        {formatPercent(
+          value
+        )}
       </p>
 
     </div>

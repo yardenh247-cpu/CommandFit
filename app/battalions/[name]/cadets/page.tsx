@@ -40,6 +40,7 @@ type PercentageResult = {
   failedPercent: number;
   excellentPercent: number;
   testDate: string;
+  testedCount: number;
   metrics: MetricsMap;
 };
 
@@ -51,6 +52,7 @@ type CloudRow = {
   failed_percent: number | null;
   excellent_percent: number | null;
   test_date: string | null;
+  tested_count: number | null;
   metrics: MetricsMap | null;
 };
 
@@ -356,6 +358,7 @@ function emptyResult(
     failedPercent: 0,
     excellentPercent: 0,
     testDate: "",
+    testedCount: 0,
     metrics: {},
   };
 }
@@ -411,14 +414,12 @@ export default function PercentageResultsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const [openingStrength, setOpeningStrength] = useState(0);
   const [currentStrength, setCurrentStrength] = useState(0);
   const [tested, setTested] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
   const [excellentCount, setExcellentCount] = useState(0);
   const [absentCount, setAbsentCount] = useState(0);
   const [dismissedCount, setDismissedCount] = useState(0);
-  const [previousCumulativePassed, setPreviousCumulativePassed] = useState(0);
 
   const cycleId = activeCycle?.id ?? `legacy-${battalionName}`;
   const isReadOnly = isViewer || activeCycle?.status === "closed";
@@ -456,7 +457,7 @@ export default function PercentageResultsPage() {
 
       const { data, error } = await supabase
         .from("percentage_test_results")
-        .select("test_name,attempt,company,passed_percent,failed_percent,excellent_percent,test_date,metrics")
+        .select("test_name,attempt,company,passed_percent,failed_percent,excellent_percent,test_date,tested_count,metrics")
         .eq("cycle_id", cycleId)
         .eq("battalion", battalionName)
         .eq("test_name", selectedTest.name)
@@ -488,19 +489,35 @@ export default function PercentageResultsPage() {
         failedPercent: Number(row.failed_percent ?? 100),
         excellentPercent: Number(row.excellent_percent ?? 0),
         testDate: row.test_date ?? "",
+        testedCount: Number(
+          row.tested_count ?? 0
+        ),
         metrics: row.metrics ?? {},
       }));
 
       setAttempts(loaded);
-      setResult(
+
+      const latestLoaded =
         loaded.length
-          ? loaded[loaded.length - 1]
-          : emptyResult(
-              selectedTest.name,
-              1,
-              selectedCompany
-            )
+          ? loaded[
+              loaded.length - 1
+            ]
+          : null;
+
+      setResult(
+        latestLoaded ??
+          emptyResult(
+            selectedTest.name,
+            1,
+            selectedCompany
+          )
       );
+
+      setTested(
+        latestLoaded?.testedCount ??
+          0
+      );
+
       setLoading(false);
     }
 
@@ -516,56 +533,95 @@ export default function PercentageResultsPage() {
   ]);
 
   const calculator = useMemo(() => {
-    const opening = safeInt(openingStrength);
-    const current = safeInt(currentStrength);
-    const testedNow = safeInt(tested);
-    const passedNow = safeInt(passedCount);
-    const excellentNow = safeInt(excellentCount);
-    const absentNow = safeInt(absentCount);
-    const dismissedNow = safeInt(dismissedCount);
-    const previousPassed = safeInt(previousCumulativePassed);
+    const current =
+      safeInt(
+        currentStrength
+      );
 
-    const failedNow = Math.max(0, testedNow - passedNow);
-    const cumulativePassed = previousPassed + passedNow;
+    const testedNow =
+      safeInt(
+        tested
+      );
 
-    const attendancePercent = percentFromCounts(testedNow, current);
-    const passOfTestedPercent = percentFromCounts(passedNow, testedNow);
-    const failOfTestedPercent = percentFromCounts(failedNow, testedNow);
-    const excellentOfTestedPercent = percentFromCounts(excellentNow, testedNow);
-    const remainingCohortPercent = percentFromCounts(current, opening);
-    const cumulativePassOfOpeningPercent = percentFromCounts(cumulativePassed, opening);
+    const passedNow =
+      safeInt(
+        passedCount
+      );
+
+    const excellentNow =
+      safeInt(
+        excellentCount
+      );
+
+    const absentNow =
+      safeInt(
+        absentCount
+      );
+
+    const dismissedNow =
+      safeInt(
+        dismissedCount
+      );
+
+    const failedNow =
+      Math.max(
+        0,
+        testedNow -
+          passedNow
+      );
+
+    const attendancePercent =
+      percentFromCounts(
+        testedNow,
+        current
+      );
+
+    const passOfTestedPercent =
+      percentFromCounts(
+        passedNow,
+        testedNow
+      );
+
+    const failOfTestedPercent =
+      percentFromCounts(
+        failedNow,
+        testedNow
+      );
+
+    const excellentOfTestedPercent =
+      percentFromCounts(
+        excellentNow,
+        testedNow
+      );
 
     const valid =
-      opening > 0 &&
       current > 0 &&
       testedNow > 0 &&
-      passedNow <= testedNow &&
-      excellentNow <= passedNow &&
-      current <= opening &&
-      testedNow + absentNow <= current &&
-      dismissedNow <= opening &&
-      cumulativePassed <= opening;
+      passedNow <=
+        testedNow &&
+      excellentNow <=
+        passedNow &&
+      testedNow +
+        absentNow <=
+        current &&
+      dismissedNow <=
+        current;
 
     return {
       failedNow,
-      cumulativePassed,
       attendancePercent,
       passOfTestedPercent,
       failOfTestedPercent,
       excellentOfTestedPercent,
-      remainingCohortPercent,
-      cumulativePassOfOpeningPercent,
       valid,
     };
   }, [
-    openingStrength,
     currentStrength,
     tested,
     passedCount,
     excellentCount,
     absentCount,
     dismissedCount,
-    previousCumulativePassed,
   ]);
 
   useEffect(() => {
@@ -576,15 +632,24 @@ export default function PercentageResultsPage() {
 
       return {
         ...current,
-        passedPercent: calculator.passOfTestedPercent ?? 0,
-        failedPercent: calculator.failOfTestedPercent ?? 0,
-        excellentPercent: calculator.excellentOfTestedPercent ?? 0,
+        passedPercent:
+          calculator.passOfTestedPercent ??
+          0,
+        failedPercent:
+          calculator.failOfTestedPercent ??
+          0,
+        excellentPercent:
+          calculator.excellentOfTestedPercent ??
+          0,
+        testedCount:
+          safeInt(tested),
       };
     });
   }, [
     calculator.passOfTestedPercent,
     calculator.failOfTestedPercent,
     calculator.excellentOfTestedPercent,
+    tested,
     isReadOnly,
     result?.attempt,
   ]);
@@ -662,8 +727,23 @@ export default function PercentageResultsPage() {
   }
 
   function selectAttempt(attempt: number) {
-    const existing = attempts.find((item) => item.attempt === attempt);
-    if (existing) setResult(existing);
+    const existing = attempts.find(
+      (item) =>
+        item.attempt === attempt
+    );
+
+    if (existing) {
+      setResult(existing);
+
+      if (
+        existing.testedCount >
+        0
+      ) {
+        setTested(
+          existing.testedCount
+        );
+      }
+    }
   }
 
   function createNextAttempt() {
@@ -797,6 +877,8 @@ export default function PercentageResultsPage() {
           failed_percent: result.failedPercent,
           excellent_percent: result.excellentPercent,
           test_date: result.testDate,
+          tested_count:
+            safeInt(tested),
           metrics: result.metrics,
           updated_at: new Date().toISOString(),
         },
@@ -1144,7 +1226,7 @@ export default function PercentageResultsPage() {
                 <p>במועד ב׳/ג׳ מזינים רק את מי שניגשו לאותו מועד חוזר.</p>
                 <p>אין להזין נכשלים — המערכת מחשבת ניגשו פחות עברו.</p>
                 <p>מצטיינים חייבים להיות חלק מתוך העוברים.</p>
-                <p>מצבה נוכחית היא המצבה הפעילה בשלב הנוכחי בקורס.</p>
+                <p>מצבה נוכחית היא מספר הצוערים הפעילים נכון למועד הבוחן.</p>
               </div>
             </details>
 
@@ -1160,23 +1242,19 @@ export default function PercentageResultsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
-                  <CompactNumberField title="מצבת פתיחה" value={openingStrength} onChange={setOpeningStrength} />
                   <CompactNumberField title="מצבה נוכחית" value={currentStrength} onChange={setCurrentStrength} />
                   <CompactNumberField title="ניגשו" value={tested} onChange={setTested} />
                   <CompactNumberField title="עברו" value={passedCount} onChange={setPassedCount} />
                   <CompactNumberField title="מצטיינים" value={excellentCount} onChange={setExcellentCount} />
                   <CompactNumberField title="לא ניגשו" value={absentCount} onChange={setAbsentCount} />
                   <CompactNumberField title="מודחים / עזבו" value={dismissedCount} onChange={setDismissedCount} />
-                  <CompactNumberField title="עברו קודם" value={previousCumulativePassed} onChange={setPreviousCumulativePassed} />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mt-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
                   <CompactResultCard title="% ניגשו מהמצבה" value={formatPercent(calculator.attendancePercent)} tone="neutral" />
                   <CompactResultCard title="% עברו מהניגשים" value={formatPercent(calculator.passOfTestedPercent)} tone="success" />
                   <CompactResultCard title="% נכשלו מהניגשים" value={formatPercent(calculator.failOfTestedPercent)} tone="danger" />
                   <CompactResultCard title="% מצטיינים מהניגשים" value={formatPercent(calculator.excellentOfTestedPercent)} tone="excellent" />
-                  <CompactResultCard title="% שנותרו במחזור" value={formatPercent(calculator.remainingCohortPercent)} tone="neutral" />
-                  <CompactResultCard title="% מעבר מצטבר מהפתיחה" value={formatPercent(calculator.cumulativePassOfOpeningPercent)} tone="neutral" />
                 </div>
 
                 <div
@@ -1188,7 +1266,7 @@ export default function PercentageResultsPage() {
                 >
                   {calculator.valid
                     ? `✅ החישוב תקין. נכשלו במועד: ${calculator.failedNow}`
-                    : "⚠️ ודא שיש מצבת פתיחה, מצבה נוכחית וניגשים, ושכל הכמויות מסתדרות."}
+                    : "⚠️ ודא שיש מצבה נוכחית וניגשים, ושכל הכמויות מסתדרות."}
                 </div>
               </section>
             )}
